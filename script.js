@@ -41,7 +41,11 @@ let state = {
     connectionMode: localStorage.getItem('airsentinel_connectionMode') || 'auto',
     isDarkTheme: localStorage.getItem('airsentinel_darkTheme') === 'true',
     deviceIP: '',
-    isLocalConnected: false
+    isLocalConnected: false,
+    userLocation: null,
+    locationPermission: false,
+    assistancePopupShown: false,
+    chatbotVisible: false
 };
 
 // DOM Elements
@@ -52,6 +56,10 @@ const elements = {
     disconnectedOverlay: document.getElementById('disconnectedOverlay'),
     setupModal: document.getElementById('setupModal'),
     deviceSettingsModal: document.getElementById('deviceSettingsModal'),
+    temperatureModal: document.getElementById('temperatureModal'),
+    humidityModal: document.getElementById('humidityModal'),
+    airQualityModal: document.getElementById('airQualityModal'),
+    co2Modal: document.getElementById('co2Modal'),
     modalConnectionStatus: document.getElementById('modalConnectionStatus'),
     deviceIpInput: document.getElementById('deviceIpInput'),
     connectionModeSelect: document.getElementById('connectionModeSelect'),
@@ -59,7 +67,13 @@ const elements = {
     wifiPassword: document.getElementById('wifiPassword'),
     currentMode: document.getElementById('currentMode'),
     currentIP: document.getElementById('currentIP'),
-    currentStatus: document.getElementById('currentStatus')
+    currentStatus: document.getElementById('currentStatus'),
+    locationText: document.getElementById('locationText'),
+    coordinates: document.getElementById('coordinates'),
+    lastUpdate: document.getElementById('lastUpdate'),
+    chatbotButton: document.getElementById('chatbotButton'),
+    chatbotContainer: document.getElementById('chatbotContainer'),
+    assistancePopup: document.getElementById('assistancePopup')
 };
 
 // ============================================
@@ -77,9 +91,16 @@ function startFirebaseListener() {
         updateDashboard(data);
         updateSensorHistory(data);
         updateCurrentChart();
-        updateAIRecommendations(data);
         updateLastUpdateTime();
         updateConnectionStatus('connected', `Live from Firebase`);
+        
+        // Show assistance popup on first data received
+        if (!state.assistancePopupShown) {
+            setTimeout(() => {
+                showAssistancePopup();
+                state.assistancePopupShown = true;
+            }, 3000);
+        }
     });
     
     sensorRef.on('value', (snapshot) => {
@@ -92,12 +113,10 @@ function startFirebaseListener() {
         if (state.isConnected) {
             console.log("✅ Connected to Firebase Realtime Database");
             updateConnectionStatus('connected', 'Live from Firebase');
-            elements.connectionBanner.classList.add('hidden');
             hideDisconnectedOverlay();
         } else {
             console.log("⚠️  Disconnected from Firebase");
             updateConnectionStatus('disconnected', 'Disconnected from Firebase');
-            elements.connectionBanner.classList.remove('hidden');
             showDisconnectedOverlay();
         }
     });
@@ -111,6 +130,12 @@ function updateDashboard(data) {
     updateElement('humidity', data.humidity, '%');
     updateElement('airQuality', data.air_quality, 'PPM');
     updateElement('co2Level', data.co2, 'PPM');
+    
+    // Update modal values
+    updateElement('modalTemperature', data.temperature, '°C');
+    updateElement('modalHumidity', data.humidity, '%');
+    updateElement('modalAirQuality', data.air_quality, 'PPM');
+    updateElement('modalCO2', data.co2, 'PPM');
     
     const now = new Date();
     const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -168,13 +193,11 @@ function updateAirQualityIndicator(ppm) {
     const aqiDot = document.getElementById('aqiDot');
     const aqiLabel = document.getElementById('aqiLabel');
     const gaugeMarker = document.getElementById('gaugeMarker');
-    const currentLevel = document.getElementById('currentLevel');
     
     if (ppm === null || ppm === undefined || ppm === "Error" || ppm === 0) {
         aqiDot.className = 'aqi-dot';
         aqiLabel.textContent = '--';
         gaugeMarker.style.left = '0%';
-        currentLevel.textContent = '--';
         return;
     }
     
@@ -205,10 +228,7 @@ function updateAirQualityIndicator(ppm) {
     
     aqiDot.className = 'aqi-dot ' + colorClass;
     aqiLabel.textContent = quality;
-    aqiLabel.className = 'aqi-label level-' + colorClass;
     gaugeMarker.style.left = Math.min(position, 100) + '%';
-    currentLevel.textContent = quality;
-    currentLevel.className = 'level-' + colorClass;
 }
 
 // ============================================
@@ -336,14 +356,14 @@ function updateChart(chartId, data, type) {
     chart.innerHTML = '';
     
     if (!data || data.length === 0) {
-        chart.innerHTML = '<div class="chart-empty">No data available yet</div>';
+        chart.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">No data available yet</div>';
         return;
     }
     
     // Find min and max values for scaling
     const values = data.map(d => d.value).filter(v => !isNaN(v));
     if (values.length === 0) {
-        chart.innerHTML = '<div class="chart-empty">No valid data</div>';
+        chart.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">No valid data</div>';
         return;
     }
     
@@ -398,156 +418,208 @@ function updateChart(chartId, data, type) {
 }
 
 // ============================================
-// AI Health Recommendations
+// Location Services
 // ============================================
-function updateAIRecommendations(data) {
-    const aiContainer = document.getElementById('aiRecommendations');
-    const recommendations = getAIRecommendations(data);
+function getLocation() {
+    if (!navigator.geolocation) {
+        elements.locationText.textContent = "Geolocation not supported";
+        return;
+    }
     
-    aiContainer.innerHTML = '';
-    
-    recommendations.forEach(rec => {
-        const message = document.createElement('div');
-        message.className = 'ai-message';
-        
-        message.innerHTML = `
-            <div class="ai-message-icon">
-                <i class="fas ${rec.icon}"></i>
-            </div>
-            <div class="ai-message-content">
-                <div class="ai-message-title">${rec.title}</div>
-                <div class="ai-message-text">${rec.text}</div>
-            </div>
-        `;
-        
-        aiContainer.appendChild(message);
-    });
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            state.userLocation = {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                timestamp: new Date(position.timestamp)
+            };
+            
+            state.locationPermission = true;
+            updateLocationDisplay();
+            saveLocationToFirebase();
+            
+            showNotification("Location updated successfully", "success");
+        },
+        (error) => {
+            console.error("Geolocation error:", error);
+            handleLocationError(error);
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 30000
+        }
+    );
 }
 
-function getAIRecommendations(data) {
-    const recommendations = [];
-    
-    // Skip if data is invalid
-    if (!data || data.air_quality === "Error" || data.air_quality === 0) {
-        recommendations.push({
-            icon: 'fa-exclamation-triangle',
-            title: 'No Sensor Data',
-            text: 'Waiting for sensor data to provide recommendations.'
-        });
-        return recommendations;
-    }
-    
-    const temp = parseFloat(data.temperature) || 0;
-    const humidity = parseFloat(data.humidity) || 0;
-    const airQuality = parseFloat(data.air_quality) || 0;
-    const co2 = parseFloat(data.co2) || 0;
-    
-    // Temperature recommendations
-    if (temp < 18) {
-        recommendations.push({
-            icon: 'fa-temperature-low',
-            title: 'Low Temperature Alert',
-            text: 'Consider increasing room temperature to 20-22°C for optimal comfort.'
-        });
-    } else if (temp > 28) {
-        recommendations.push({
-            icon: 'fa-temperature-high',
-            title: 'High Temperature Alert',
-            text: 'Consider using a fan or AC to cool down to 22-25°C.'
-        });
-    } else if (temp >= 20 && temp <= 25) {
-        recommendations.push({
-            icon: 'fa-check-circle',
-            title: 'Ideal Temperature',
-            text: 'Room temperature is in the comfortable range. Well done!'
-        });
-    }
-    
-    // Humidity recommendations
-    if (humidity < 30) {
-        recommendations.push({
-            icon: 'fa-tint-slash',
-            title: 'Low Humidity',
-            text: 'Air is too dry. Consider using a humidifier (ideal: 40-60%).'
-        });
-    } else if (humidity > 70) {
-        recommendations.push({
-            icon: 'fa-umbrella',
-            title: 'High Humidity',
-            text: 'Air is too humid. Consider using a dehumidifier or opening windows.'
-        });
-    } else if (humidity >= 40 && humidity <= 60) {
-        recommendations.push({
-            icon: 'fa-check-circle',
-            title: 'Ideal Humidity',
-            text: 'Humidity level is perfect for comfort and health.'
-        });
-    }
-    
-    // Air quality recommendations
-    if (airQuality > 100) {
-        recommendations.push({
-            icon: 'fa-wind',
-            title: 'Poor Air Quality',
-            text: airQuality > 200 
-                ? '⚠️ Air quality is hazardous! Open windows or use air purifier immediately.'
-                : 'Consider ventilating the room or using an air purifier.'
-        });
-    } else if (airQuality <= 50) {
-        recommendations.push({
-            icon: 'fa-check-circle',
-            title: 'Excellent Air Quality',
-            text: 'Air quality is excellent! Keep up the good ventilation.'
-        });
-    }
-    
-    // CO2 recommendations
-    if (co2 > 1000) {
-        recommendations.push({
-            icon: 'fa-cloud',
-            title: 'High CO₂ Level',
-            text: 'CO₂ level is elevated. Open windows for fresh air circulation.'
-        });
-    } else if (co2 < 600 && co2 > 0) {
-        recommendations.push({
-            icon: 'fa-check-circle',
-            title: 'Good CO₂ Level',
-            text: 'CO₂ concentration is within healthy range.'
-        });
-    }
-    
-    // If all is good and no specific recommendations
-    if (recommendations.length === 0) {
-        recommendations.push({
-            icon: 'fa-thumbs-up',
-            title: 'Environment Optimal',
-            text: 'All parameters are within healthy ranges. Keep up the good ventilation!'
-        });
-    }
-    
-    // Always add a general tip
-    recommendations.push({
-        icon: 'fa-lightbulb',
-        title: 'General Tip',
-        text: 'Regular ventilation (10-15 minutes) every few hours helps maintain good air quality.'
-    });
-    
-    return recommendations;
+function updateLocation() {
+    elements.locationText.textContent = "Updating location...";
+    elements.coordinates.textContent = "Lat: --, Lon: --";
+    getLocation();
 }
 
-function refreshAI() {
-    // Get latest data from Firebase
-    const sensorRef = database.ref('sensor_readings');
-    sensorRef.orderByKey().limitToLast(1).once('child_added')
-        .then(snapshot => {
-            const data = snapshot.val();
-            updateAIRecommendations(data);
-            showNotification('AI recommendations refreshed', 'success');
+function updateLocationDisplay() {
+    if (!state.userLocation) {
+        elements.locationText.textContent = "Location not available";
+        elements.coordinates.textContent = "Lat: --, Lon: --";
+        return;
+    }
+    
+    const lat = state.userLocation.latitude.toFixed(6);
+    const lon = state.userLocation.longitude.toFixed(6);
+    
+    elements.coordinates.textContent = `Lat: ${lat}, Lon: ${lon}`;
+    elements.lastUpdate.textContent = `Last updated: ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    
+    // Get location name using reverse geocoding (simplified)
+    getLocationName(state.userLocation.latitude, state.userLocation.longitude);
+}
+
+function getLocationName(lat, lon) {
+    // Simplified reverse geocoding - in production, use a proper geocoding service
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.address) {
+                const address = data.address;
+                let locationName = '';
+                
+                if (address.road) locationName += address.road;
+                if (address.suburb) locationName += (locationName ? ', ' : '') + address.suburb;
+                if (address.city || address.town || address.village) {
+                    locationName += (locationName ? ', ' : '') + (address.city || address.town || address.village);
+                }
+                
+                if (locationName) {
+                    elements.locationText.textContent = locationName;
+                } else {
+                    elements.locationText.textContent = `${lat}, ${lon}`;
+                }
+            } else {
+                elements.locationText.textContent = `${lat}, ${lon}`;
+            }
         })
         .catch(error => {
-            console.error('Failed to refresh AI:', error);
-            showNotification('Failed to refresh recommendations', 'error');
+            console.error("Reverse geocoding error:", error);
+            elements.locationText.textContent = `${lat}, ${lon}`;
         });
+}
+
+function handleLocationError(error) {
+    switch(error.code) {
+        case error.PERMISSION_DENIED:
+            elements.locationText.textContent = "Location permission denied";
+            break;
+        case error.POSITION_UNAVAILABLE:
+            elements.locationText.textContent = "Location unavailable";
+            break;
+        case error.TIMEOUT:
+            elements.locationText.textContent = "Location request timeout";
+            break;
+        default:
+            elements.locationText.textContent = "Location error occurred";
+            break;
+    }
+}
+
+function saveLocationToFirebase() {
+    if (!state.userLocation || !state.isConnected) return;
+    
+    try {
+        const locationRef = database.ref('user_locations').push();
+        locationRef.set({
+            latitude: state.userLocation.latitude,
+            longitude: state.userLocation.longitude,
+            accuracy: state.userLocation.accuracy,
+            timestamp: Date.now(),
+            deviceId: localStorage.getItem('airsentinel_deviceId') || 'unknown'
+        });
+    } catch (error) {
+        console.error("Failed to save location to Firebase:", error);
+    }
+}
+
+// ============================================
+// Modal Functions
+// ============================================
+function showTemperatureModal() {
+    elements.temperatureModal.classList.add('active');
+}
+
+function hideTemperatureModal() {
+    elements.temperatureModal.classList.remove('active');
+}
+
+function showHumidityModal() {
+    elements.humidityModal.classList.add('active');
+}
+
+function hideHumidityModal() {
+    elements.humidityModal.classList.remove('active');
+}
+
+function showAirQualityModal() {
+    elements.airQualityModal.classList.add('active');
+}
+
+function hideAirQualityModal() {
+    elements.airQualityModal.classList.remove('active');
+}
+
+function showCO2Modal() {
+    elements.co2Modal.classList.add('active');
+}
+
+function hideCO2Modal() {
+    elements.co2Modal.classList.remove('active');
+}
+
+// ============================================
+// Assistance Popup Functions
+// ============================================
+function showAssistancePopup() {
+    if (!state.assistancePopupShown) {
+        elements.assistancePopup.classList.add('active');
+        // Auto hide after 10 seconds
+        setTimeout(() => {
+            hideAssistancePopup();
+        }, 10000);
+    }
+}
+
+function hideAssistancePopup() {
+    elements.assistancePopup.classList.remove('active');
+}
+
+function openChatbot() {
+    hideAssistancePopup();
+    toggleChatbot();
+}
+
+// ============================================
+// AI Chatbot Functions
+// ============================================
+function toggleChatbot() {
+    state.chatbotVisible = !state.chatbotVisible;
+    
+    if (state.chatbotVisible) {
+        elements.chatbotContainer.classList.add('active');
+        
+        // Initialize chatbot if not already initialized
+        if (typeof initializeFlowiseChatbot === 'function') {
+            setTimeout(() => {
+                initializeFlowiseChatbot();
+            }, 100);
+        }
+    } else {
+        elements.chatbotContainer.classList.remove('active');
+        
+        // Clean up chatbot
+        if (typeof cleanupFlowiseChatbot === 'function') {
+            cleanupFlowiseChatbot();
+        }
+    }
 }
 
 // ============================================
@@ -585,13 +657,11 @@ function updateLEDStatus() {
     const ledStatusText = document.getElementById('ledStatusText');
     
     if (state.ledState) {
-        ledIndicator.classList.add('active');
+        ledIndicator.classList.add('on');
         ledStatusText.textContent = 'ON';
-        ledStatusText.style.color = '#4CAF50';
     } else {
-        ledIndicator.classList.remove('active');
+        ledIndicator.classList.remove('on');
         ledStatusText.textContent = 'OFF';
-        ledStatusText.style.color = '#666';
     }
 }
 
@@ -639,25 +709,7 @@ async function setLCDMode(mode) {
     };
     
     try {
-        // First, try to get the ESP32 IP address
-        let deviceIp = state.deviceIp;
-        
-        // If using cloud mode, we need to find the ESP32's local IP
-        if (state.connectionMode === 'cloud' || !state.isLocalConnected) {
-            // Try to discover the ESP32 on the local network
-            const localResponse = await fetch(`http://${deviceIp}/api/status`, {
-                method: 'GET',
-                timeout: 3000
-            }).catch(() => null);
-            
-            if (!localResponse || !localResponse.ok) {
-                showNotification('Cannot connect to ESP32 for LCD control', 'error');
-                return;
-            }
-        }
-        
-        // Send LCD mode command directly to ESP32
-        const response = await fetch(`http://${deviceIp}/api/lcd`, {
+        const response = await fetch(`http://${state.deviceIp}/api/lcd`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -671,43 +723,16 @@ async function setLCDMode(mode) {
             state.currentLCDMode = mode;
             document.getElementById('currentLCDDisplay').textContent = modeNames[mode] || mode;
             showNotification(`LCD set to ${modeNames[mode]}`, 'success');
-            
-            // Log the action
-            console.log(`📺 LCD Mode changed to: ${mode} (sent to ESP32)`);
         } else {
             throw new Error(`HTTP ${response.status}`);
         }
     } catch (error) {
-        console.error('Failed to set LCD mode on ESP32:', error);
+        console.error('Failed to set LCD mode:', error);
         
-        // Fallback: Try to save the mode in Firebase as a command
-        try {
-            const database = firebase.database();
-            const commandsRef = database.ref('lcd_commands');
-            
-            // Create a new command entry
-            const command = {
-                mode: mode,
-                timestamp: Date.now(),
-                processed: false
-            };
-            
-            await commandsRef.push(command);
-            
-            // Update local state
-            state.currentLCDMode = mode;
-            document.getElementById('currentLCDDisplay').textContent = modeNames[mode] || mode;
-            showNotification(`LCD command sent to cloud. ESP32 will update when connected.`, 'info');
-            
-            console.log(`📡 LCD command saved to Firebase: ${mode}`);
-        } catch (firebaseError) {
-            console.error('Failed to save LCD command to Firebase:', firebaseError);
-            
-            // Last resort: Update only local state
-            state.currentLCDMode = mode;
-            document.getElementById('currentLCDDisplay').textContent = modeNames[mode] || mode;
-            showNotification(`LCD mode set locally to ${modeNames[mode]}`, 'info');
-        }
+        // Fallback: Update only local state
+        state.currentLCDMode = mode;
+        document.getElementById('currentLCDDisplay').textContent = modeNames[mode] || mode;
+        showNotification(`LCD mode set locally to ${modeNames[mode]}`, 'info');
     }
 }
 
@@ -884,8 +909,8 @@ function generateQRCode() {
     
     if (typeof QRCode !== 'undefined') {
         QRCode.toCanvas(container, wifiData, {
-            width: 150,
-            height: 150,
+            width: 160,
+            height: 160,
             margin: 1,
             color: {
                 dark: '#2c3e50',
@@ -894,11 +919,11 @@ function generateQRCode() {
         }, function(error) {
             if (error) {
                 console.error('QR Code generation error:', error);
-                container.innerHTML = '<div class="qr-error">QR Code failed to generate</div>';
+                container.innerHTML = '<div style="color: var(--text-secondary); text-align: center;">QR Code failed to generate</div>';
             }
         });
     } else {
-        container.innerHTML = '<div class="qr-error">QR Code library not loaded</div>';
+        container.innerHTML = '<div style="color: var(--text-secondary); text-align: center;">QR Code library not loaded</div>';
     }
 }
 
@@ -917,7 +942,6 @@ function refreshData() {
             updateDashboard(data);
             updateSensorHistory(data);
             updateCurrentChart();
-            updateAIRecommendations(data);
             updateLastUpdateTime();
             
             updateConnectionStatus('connected', 'Data refreshed');
@@ -1035,22 +1059,20 @@ function initialize() {
     // Initialize charts
     updateCurrentChart();
     
-    // Set up initial AI recommendations
-    const initialData = {
-        temperature: 22.5,
-        humidity: 45.0,
-        air_quality: 35,
-        co2: 450,
-        analog_raw: 512,
-        device_ready: true,
-        timestamp: Math.floor(Date.now() / 1000)
-    };
-    updateAIRecommendations(initialData);
+    // Get user location
+    getLocation();
     
     console.log('Dashboard ready. Listening for Firebase data...');
     
     // Check initial connection
     setTimeout(() => testConnection(), 1000);
+    
+    // Add click outside listener for modals
+    document.addEventListener('click', (event) => {
+        if (event.target.classList.contains('modal')) {
+            event.target.classList.remove('active');
+        }
+    });
 }
 
 // ============================================
@@ -1058,18 +1080,17 @@ function initialize() {
 // ============================================
 document.addEventListener('DOMContentLoaded', initialize);
 
-// Close modals when clicking outside
-document.addEventListener('click', (event) => {
-    if (event.target.classList.contains('modal')) {
-        event.target.classList.remove('active');
-    }
-});
-
 // Keyboard shortcuts
 document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
         hideSetupModal();
         hideDeviceSettingsModal();
+        hideTemperatureModal();
+        hideHumidityModal();
+        hideAirQualityModal();
+        hideCO2Modal();
+        hideAssistancePopup();
+        if (state.chatbotVisible) toggleChatbot();
     }
     if (event.key === 'F5' || (event.ctrlKey && event.key === 'r')) {
         event.preventDefault();
@@ -1088,7 +1109,6 @@ window.setLCDMode = setLCDMode;
 window.toggleTheme = toggleTheme;
 window.switchChart = switchChart;
 window.refreshData = refreshData;
-window.refreshAI = refreshAI;
 window.showSetupModal = showSetupModal;
 window.hideSetupModal = hideSetupModal;
 window.showDeviceSettingsModal = showDeviceSettingsModal;
@@ -1097,146 +1117,18 @@ window.updateDeviceIP = updateDeviceIP;
 window.updateConnectionMode = updateConnectionMode;
 window.testConnection = testConnection;
 window.checkConnection = checkConnection;
+window.updateLocation = updateLocation;
+window.showTemperatureModal = showTemperatureModal;
+window.hideTemperatureModal = hideTemperatureModal;
+window.showHumidityModal = showHumidityModal;
+window.hideHumidityModal = hideHumidityModal;
+window.showAirQualityModal = showAirQualityModal;
+window.hideAirQualityModal = hideAirQualityModal;
+window.showCO2Modal = showCO2Modal;
+window.hideCO2Modal = hideCO2Modal;
+window.showAssistancePopup = showAssistancePopup;
+window.hideAssistancePopup = hideAssistancePopup;
+window.openChatbot = openChatbot;
+window.toggleChatbot = toggleChatbot;
 
-// ============================================
-// Direct ESP32 Control Functions
-// ============================================
-
-async function sendDirectCommand(command) {
-    try {
-        let endpoint = '';
-        let method = 'POST';
-        let body = null;
-        
-        switch(command) {
-            case 'led_toggle':
-                endpoint = '/api/led/toggle';
-                break;
-            case 'beep':
-                endpoint = '/api/system/control';
-                body = JSON.stringify({ command: 'beep' });
-                break;
-            case 'restart':
-                endpoint = '/api/system/control';
-                body = JSON.stringify({ command: 'restart' });
-                break;
-            default:
-                showNotification('Unknown command', 'error');
-                return;
-        }
-        
-        const response = await fetch(`http://${state.deviceIp}${endpoint}`, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: body
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            showNotification(`Command sent successfully: ${command}`, 'success');
-            console.log(`✅ ESP32 Command ${command} sent successfully`);
-        } else {
-            throw new Error(`HTTP ${response.status}`);
-        }
-    } catch (error) {
-        console.error(`Failed to send command ${command}:`, error);
-        showNotification(`Failed to send command to ESP32`, 'error');
-    }
-}
-
-async function testESP32Connection() {
-    const statusDiv = document.getElementById('esp32Status');
-    statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing connection...';
-    statusDiv.className = 'status-message connecting';
-    
-    try {
-        const response = await fetch(`http://${state.deviceIp}/api/status`, {
-            timeout: 5000
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            statusDiv.innerHTML = `
-                <div style="color: #4CAF50;">
-                    <i class="fas fa-check-circle"></i> ESP32 Connected!
-                </div>
-                <div style="margin-top: 10px; font-size: 12px;">
-                    <strong>IP:</strong> ${data.ipAddress || state.deviceIp}<br>
-                    <strong>WiFi:</strong> ${data.wifiStatus}<br>
-                    <strong>SSID:</strong> ${data.ssid || 'Unknown'}
-                </div>
-            `;
-            statusDiv.className = 'status-message connected';
-            
-            state.isLocalConnected = true;
-            updateConnectionStatus('connected', 'Connected to ESP32');
-            
-        } else {
-            throw new Error(`HTTP ${response.status}`);
-        }
-    } catch (error) {
-        statusDiv.innerHTML = `
-            <div style="color: #f44336;">
-                <i class="fas fa-times-circle"></i> Cannot connect to ESP32
-            </div>
-            <div style="margin-top: 10px; font-size: 12px;">
-                Error: ${error.message}<br>
-                Make sure ESP32 is on the same network
-            </div>
-        `;
-        statusDiv.className = 'status-message disconnected';
-        
-        state.isLocalConnected = false;
-        updateConnectionStatus('disconnected', 'Cannot connect to ESP32');
-    }
-}
-
-async function getESP32Status() {
-    try {
-        const response = await fetch(`http://${state.deviceIp}/api/data/all`);
-        
-        if (response.ok) {
-            const data = await response.json();
-            
-            // Create a detailed status display
-            const statusDiv = document.getElementById('esp32Status');
-            statusDiv.innerHTML = `
-                <div style="color: #4CAF50; margin-bottom: 10px;">
-                    <i class="fas fa-check-circle"></i> ESP32 Status
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 12px;">
-                    <div><strong>Temperature:</strong> ${data.temperature}</div>
-                    <div><strong>Humidity:</strong> ${data.humidity}</div>
-                    <div><strong>Air Quality:</strong> ${data.airQuality}</div>
-                    <div><strong>CO₂:</strong> ${data.co2}</div>
-                    <div><strong>Uptime:</strong> ${data.uptime}</div>
-                    <div><strong>Free Heap:</strong> ${data.freeHeap}</div>
-                    <div><strong>LED:</strong> ${data.ledState}</div>
-                    <div><strong>WiFi RSSI:</strong> ${data.rssi || 'N/A'}</div>
-                </div>
-            `;
-            statusDiv.className = 'status-message connected';
-            
-        } else {
-            throw new Error(`HTTP ${response.status}`);
-        }
-    } catch (error) {
-        const statusDiv = document.getElementById('esp32Status');
-        statusDiv.innerHTML = `
-            <div style="color: #f44336;">
-                <i class="fas fa-times-circle"></i> Failed to get status
-            </div>
-            <div style="margin-top: 10px; font-size: 12px;">
-                Error: ${error.message}
-            </div>
-        `;
-        statusDiv.className = 'status-message disconnected';
-    }
-}
-
-// Make functions globally available
-window.sendDirectCommand = sendDirectCommand;
-window.testESP32Connection = testESP32Connection;
-window.getESP32Status = getESP32Status;
+console.log("✅ AirSentinel script.js loaded successfully!");

@@ -11,6 +11,7 @@
     <script src="script.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <!-- Connection Setup Modal -->
@@ -88,14 +89,296 @@
         </div>
     </div>
 
+    <!-- Device Settings Modal -->
+    <div id="deviceSettingsModal" class="modal">
+        <div class="modal-content settings-modal">
+            <div class="modal-header">
+                <h2>Device Settings</h2>
+                <button class="btn-close" onclick="hideDeviceSettingsModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="settings-group">
+                    <label for="deviceIpInput">Device IP Address:</label>
+                    <div class="input-group">
+                        <input type="text" id="deviceIpInput" placeholder="192.168.4.1" value="192.168.4.1">
+                        <button class="btn btn-secondary" onclick="updateDeviceIP()">Save</button>
+                    </div>
+                    <small>Local network IP (e.g., 192.168.x.x)</small>
+                </div>
+                
+                <div class="settings-group">
+                    <label for="connectionModeSelect">Connection Mode:</label>
+                    <select id="connectionModeSelect" onchange="updateConnectionMode()">
+                        <option value="local">Local WiFi (Same network)</option>
+                        <option value="cloud">Cloud Proxy (Remote access)</option>
+                        <option value="auto">Auto-detect (Try local first)</option>
+                    </select>
+                    <small id="modeDescription">Connect to the same WiFi network as ESP32</small>
+                </div>
+                
+                <div class="settings-group">
+                    <label>Current Connection:</label>
+                    <div class="status-display">
+                        <div><strong>Mode:</strong> <span id="currentMode">local</span></div>
+                        <div><strong>Device IP:</strong> <span id="currentIP">192.168.4.1</span></div>
+                        <div><strong>Status:</strong> <span id="currentStatus">Disconnected</span></div>
+                    </div>
+                </div>
+                
+                <div class="settings-group">
+                    <label>Quick Tips:</label>
+                    <ul class="tips-list">
+                        <li><strong>Local Mode:</strong> Device and website must be on same WiFi network</li>
+                        <li><strong>Cloud Mode:</strong> Works remotely but requires cloud proxy</li>
+                        <li><strong>Auto Mode:</strong> Tries local first, falls back to cloud</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="testConnection()">
+                    <i class="fas fa-plug"></i> Test Connection
+                </button>
+                <button class="btn btn-secondary" onclick="hideDeviceSettingsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sensor Detail Modals -->
+    <div id="temperatureModal" class="modal">
+        <div class="modal-content sensor-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-thermometer-half"></i> Temperature</h2>
+                <button class="btn-close" onclick="hideTemperatureModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="sensor-detail-content">
+                    <div class="sensor-value-display">
+                        <span class="value" id="modalTemperature">--</span>
+                        <span class="unit">°C</span>
+                    </div>
+                    <div class="sensor-info">
+                        <h3><i class="fas fa-info-circle"></i> Role in the System</h3>
+                        <p>Temperature monitoring is crucial for:</p>
+                        <ul>
+                            <li><strong>Comfort Assessment:</strong> Ideal indoor temperature ranges from 20-25°C</li>
+                            <li><strong>Health Impact:</strong> Affects respiratory function and overall comfort</li>
+                            <li><strong>System Calibration:</strong> Temperature affects sensor readings accuracy</li>
+                            <li><strong>Energy Efficiency:</strong> Helps optimize HVAC system performance</li>
+                        </ul>
+                        
+                        <h3><i class="fas fa-chart-line"></i> Health Implications</h3>
+                        <ul>
+                            <li><strong>Optimal:</strong> 20-25°C (Comfortable for most activities)</li>
+                            <li><strong>Too Cold:</strong> <20°C (Risk of respiratory issues)</li>
+                            <li><strong>Too Hot:</strong> >25°C (Can cause dehydration, fatigue)</li>
+                            <li><strong>Dangerous:</strong> <15°C or >30°C (Health risks increase significantly)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="hideTemperatureModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="humidityModal" class="modal">
+        <div class="modal-content sensor-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-tint"></i> Humidity</h2>
+                <button class="btn-close" onclick="hideHumidityModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="sensor-detail-content">
+                    <div class="sensor-value-display">
+                        <span class="value" id="modalHumidity">--</span>
+                        <span class="unit">%</span>
+                    </div>
+                    <div class="sensor-info">
+                        <h3><i class="fas fa-info-circle"></i> Role in the System</h3>
+                        <p>Humidity monitoring is essential for:</p>
+                        <ul>
+                            <li><strong>Comfort Level:</strong> Affects how hot or cold we feel</li>
+                            <li><strong>Health Protection:</strong> Prevents mold growth and respiratory issues</li>
+                            <li><strong>Sensor Accuracy:</strong> Humidity affects gas sensor readings</li>
+                            <li><strong>Indoor Climate:</strong> Maintains optimal living/working conditions</li>
+                        </ul>
+                        
+                        <h3><i class="fas fa-chart-line"></i> Health Implications</h3>
+                        <ul>
+                            <li><strong>Optimal:</strong> 40-60% (Comfortable, reduces pathogens)</li>
+                            <li><strong>Too Dry:</strong> <30% (Dry skin, respiratory irritation)</li>
+                            <li><strong>Too Humid:</strong> >60% (Mold growth, dust mites)</li>
+                            <li><strong>Extreme:</strong> <20% or >80% (Health hazards present)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="hideHumidityModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="airQualityModal" class="modal">
+        <div class="modal-content sensor-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-wind"></i> Air Quality (VOC/PPM)</h2>
+                <button class="btn-close" onclick="hideAirQualityModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="sensor-detail-content">
+                    <div class="sensor-value-display">
+                        <span class="value" id="modalAirQuality">--</span>
+                        <span class="unit">PPM</span>
+                    </div>
+                    <div class="sensor-info">
+                        <h3><i class="fas fa-info-circle"></i> Role in the System</h3>
+                        <p>Air quality monitoring detects:</p>
+                        <ul>
+                            <li><strong>VOCs:</strong> Volatile Organic Compounds from cleaning products, paints, furniture</li>
+                            <li><strong>Toxins:</strong> Harmful gases and pollutants</li>
+                            <li><strong>Indoor Pollution:</strong> Particles from cooking, smoking, etc.</li>
+                            <li><strong>Ventilation Need:</strong> Indicates when fresh air is required</li>
+                        </ul>
+                        
+                        <h3><i class="fas fa-chart-line"></i> Health Implications</h3>
+                        <ul>
+                            <li><strong>Excellent:</strong> 0-50 PPM (Ideal indoor air)</li>
+                            <li><strong>Moderate:</strong> 51-100 PPM (Adequate, monitor)</li>
+                            <li><strong>Unhealthy:</strong> 101-200 PPM (Improve ventilation)</li>
+                            <li><strong>Hazardous:</strong> 201+ PPM (Immediate action needed)</li>
+                        </ul>
+                        
+                        <div class="health-tips">
+                            <h3><i class="fas fa-lightbulb"></i> Improvement Tips</h3>
+                            <ul>
+                                <li>Increase ventilation by opening windows</li>
+                                <li>Use air purifiers with HEPA filters</li>
+                                <li>Reduce use of aerosol products</li>
+                                <li>Regularly maintain HVAC systems</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="hideAirQualityModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="co2Modal" class="modal">
+        <div class="modal-content sensor-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-cloud"></i> CO₂ Level</h2>
+                <button class="btn-close" onclick="hideCO2Modal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="sensor-detail-content">
+                    <div class="sensor-value-display">
+                        <span class="value" id="modalCO2">--</span>
+                        <span class="unit">PPM</span>
+                    </div>
+                    <div class="sensor-info">
+                        <h3><i class="fas fa-info-circle"></i> Role in the System</h3>
+                        <p>CO₂ monitoring indicates:</p>
+                        <ul>
+                            <li><strong>Ventilation Quality:</strong> Measures fresh air exchange</li>
+                            <li><strong>Occupancy Level:</strong> Higher CO₂ means more people breathing</li>
+                            <li><strong>Air Stagnation:</strong> Shows when indoor air is not circulating</li>
+                            <li><strong>Health Risk:</strong> High CO₂ affects cognitive function</li>
+                        </ul>
+                        
+                        <h3><i class="fas fa-chart-line"></i> Health Implications</h3>
+                        <ul>
+                            <li><strong>Excellent:</strong> 400-600 PPM (Outdoor air level)</li>
+                            <li><strong>Good:</strong> 601-800 PPM (Well-ventilated indoor)</li>
+                            <li><strong>Fair:</strong> 801-1000 PPM (Complaints may arise)</li>
+                            <li><strong>Poor:</strong> 1001-1400 PPM (Drowsiness, poor concentration)</li>
+                            <li><strong>Unhealthy:</strong> 1400+ PPM (Headaches, sleepiness)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="hideCO2Modal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assistance Popup -->
+    <div id="assistancePopup" class="assistance-popup">
+        <div class="popup-content">
+            <div class="popup-header">
+                <h3><i class="fas fa-question-circle"></i> Need Assistance?</h3>
+                <button class="btn-close" onclick="hideAssistancePopup()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="popup-body">
+                <p>Our AI assistant can help you with:</p>
+                <ul>
+                    <li><i class="fas fa-heartbeat"></i> Health recommendations</li>
+                    <li><i class="fas fa-chart-line"></i> Data interpretation</li>
+                    <li><i class="fas fa-cogs"></i> Device troubleshooting</li>
+                    <li><i class="fas fa-tips"></i> Improvement tips</li>
+                </ul>
+                <button class="btn btn-primary" onclick="openChatbot()">
+                    <i class="fas fa-robot"></i> Open AI Assistant
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Chatbot Floating Button -->
+    <div id="chatbotButton" class="chatbot-button" onclick="toggleChatbot()">
+        <i class="fas fa-robot"></i>
+        <span class="chatbot-notification" id="chatbotNotification">1</span>
+    </div>
+
+    <!-- AI Chatbot Container -->
+    <div id="chatbotContainer" class="chatbot-container">
+        <div class="chatbot-header">
+            <div class="chatbot-title">
+                <i class="fas fa-robot"></i>
+                <span>AI Health Assistant</span>
+            </div>
+            <button class="btn-close" onclick="toggleChatbot()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="chatbot-body">
+            <div class="flowise-chat-container">
+                <!-- Flowise chatbot will be loaded here -->
+                <div id="flowise-chatbot"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
     <div class="container">
         <!-- Header with Connection Status -->
         <div class="header">
-            <div class="logo">
-                <div class="logo-icon">
-                    <i class="fas fa-wind"></i>
+            <div class="logo-section">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-wind"></i>
+                    </div>
+                    <div class="logo-text">AirSentinel</div>
                 </div>
-                <div class="logo-text">AirSentinel</div>
                 <div class="connection-indicator" id="connectionIndicator">
                     <span class="indicator-dot"></span>
                     <span id="connectionText">Connecting...</span>
@@ -117,76 +400,25 @@
             </div>
         </div>
         
-        <!-- Device Settings Modal -->
-        <div id="deviceSettingsModal" class="modal">
-            <div class="modal-content settings-modal">
-                <div class="modal-header">
-                    <h2>Device Settings</h2>
-                    <button class="btn-close" onclick="hideDeviceSettingsModal()">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                
-                <div class="modal-body">
-                    <div class="settings-group">
-                        <label for="deviceIpInput">Device IP Address:</label>
-                        <div class="input-group">
-                            <input type="text" id="deviceIpInput" placeholder="192.168.4.1" value="192.168.4.1">
-                            <button class="btn btn-secondary" onclick="updateDeviceIP()">Save</button>
-                        </div>
-                        <small>Local network IP (e.g., 192.168.x.x)</small>
-                    </div>
-                    
-                    <div class="settings-group">
-                        <label for="connectionModeSelect">Connection Mode:</label>
-                        <select id="connectionModeSelect" onchange="updateConnectionMode()">
-                            <option value="local">Local WiFi (Same network)</option>
-                            <option value="cloud">Cloud Proxy (Remote access)</option>
-                            <option value="auto">Auto-detect (Try local first)</option>
-                        </select>
-                        <small id="modeDescription">Connect to the same WiFi network as ESP32</small>
-                    </div>
-                    
-                    <div class="settings-group">
-                        <label>Current Connection:</label>
-                        <div class="status-display">
-                            <div><strong>Mode:</strong> <span id="currentMode">local</span></div>
-                            <div><strong>Device IP:</strong> <span id="currentIP">192.168.4.1</span></div>
-                            <div><strong>Status:</strong> <span id="currentStatus">Disconnected</span></div>
-                        </div>
-                    </div>
-                    
-                    <div class="settings-group">
-                        <label>Quick Tips:</label>
-                        <ul class="tips-list">
-                            <li><strong>Local Mode:</strong> Device and website must be on same WiFi network</li>
-                            <li><strong>Cloud Mode:</strong> Works remotely but requires cloud proxy</li>
-                            <li><strong>Auto Mode:</strong> Tries local first, falls back to cloud</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <div class="modal-footer">
-                    <button class="btn btn-primary" onclick="testConnection()">
-                        <i class="fas fa-plug"></i> Test Connection
-                    </button>
-                    <button class="btn btn-secondary" onclick="hideDeviceSettingsModal()">Close</button>
-                </div>
+        <!-- Location Display -->
+        <div class="location-section">
+            <div class="location-info">
+                <i class="fas fa-map-marker-alt"></i>
+                <span id="locationText">Getting location...</span>
+                <button class="btn btn-small" onclick="updateLocation()" title="Update Location">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+            <div class="location-coords">
+                <span id="coordinates">Lat: --, Lon: --</span>
+                <span id="lastUpdate">Last updated: --</span>
             </div>
         </div>
         
-        <!-- Connection Banner -->
-        <div class="connection-banner" id="connectionBanner">
-            <div class="banner-content">
-                <i class="fas fa-info-circle"></i>
-                <span>Connect to <strong>AirSentinel</strong> WiFi to access your device</span>
-                <button class="btn btn-small" onclick="showSetupModal()">Show Instructions</button>
-            </div>
-        </div>
-        
-        <!-- Main Dashboard -->
+        <!-- Main Dashboard Cards -->
         <div class="dashboard">
-            <div class="card temperature-card">
+            <!-- Temperature Card -->
+            <div class="card temperature-card clickable-card" onclick="showTemperatureModal()">
                 <div class="card-header">
                     <div class="card-title">
                         <i class="fas fa-thermometer-half"></i> Temperature
@@ -203,10 +435,12 @@
                 </div>
                 <div class="card-footer">
                     <div class="card-time" id="tempTime">--:--:--</div>
+                    <div class="card-hint">Tap for details</div>
                 </div>
             </div>
             
-            <div class="card humidity-card">
+            <!-- Humidity Card -->
+            <div class="card humidity-card clickable-card" onclick="showHumidityModal()">
                 <div class="card-header">
                     <div class="card-title">
                         <i class="fas fa-tint"></i> Humidity
@@ -223,10 +457,12 @@
                 </div>
                 <div class="card-footer">
                     <div class="card-time" id="humTime">--:--:--</div>
+                    <div class="card-hint">Tap for details</div>
                 </div>
             </div>
             
-            <div class="card airquality-card">
+            <!-- Air Quality Card -->
+            <div class="card airquality-card clickable-card" onclick="showAirQualityModal()">
                 <div class="card-header">
                     <div class="card-title">
                         <i class="fas fa-wind"></i> Air Quality
@@ -246,10 +482,12 @@
                         <div class="aqi-dot" id="aqiDot"></div>
                         <span class="aqi-label" id="aqiLabel">Good</span>
                     </div>
+                    <div class="card-hint">Tap for details</div>
                 </div>
             </div>
             
-            <div class="card co2-card">
+            <!-- CO₂ Level Card -->
+            <div class="card co2-card clickable-card" onclick="showCO2Modal()">
                 <div class="card-header">
                     <div class="card-title">
                         <i class="fas fa-cloud"></i> CO₂ Level
@@ -266,6 +504,7 @@
                 </div>
                 <div class="card-footer">
                     <div class="card-time" id="co2Time">--:--:--</div>
+                    <div class="card-hint">Tap for details</div>
                 </div>
             </div>
         </div>
@@ -289,21 +528,6 @@
                     <span>Moderate</span>
                     <span>Unhealthy</span>
                     <span>Hazardous</span>
-                </div>
-            </div>
-            <div class="air-quality-info">
-                <div class="air-quality-level">
-                    <span class="level-good">0-50 PPM: Excellent</span>
-                    <span id="currentLevel">--</span>
-                </div>
-                <div class="air-quality-level">
-                    <span class="level-moderate">51-100 PPM: Moderate</span>
-                </div>
-                <div class="air-quality-level">
-                    <span class="level-unhealthy">101-200 PPM: Unhealthy</span>
-                </div>
-                <div class="air-quality-level">
-                    <span class="level-hazardous">201+ PPM: Hazardous</span>
                 </div>
             </div>
         </div>
@@ -337,29 +561,6 @@
                 <div class="lcd-info">
                     <i class="fas fa-info-circle"></i>
                     Current LCD Display: <strong id="currentLCDDisplay">Welcome Screen</strong>
-                </div>
-            </div>
-        </div>
-        
-        <!-- AI Health Recommendations -->
-        <div class="section">
-            <div class="section-header">
-                <h3><i class="fas fa-robot"></i> AI Health Assistant</h3>
-                <div class="section-actions">
-                    <button class="btn btn-small" onclick="refreshAI()">
-                        <i class="fas fa-sync-alt"></i> Refresh
-                    </button>
-                </div>
-            </div>
-            <div class="ai-recommendations" id="aiRecommendations">
-                <div class="ai-message">
-                    <div class="ai-message-icon">
-                        <i class="fas fa-lightbulb"></i>
-                    </div>
-                    <div class="ai-message-content">
-                        <div class="ai-message-title">Connect to get started</div>
-                        <div class="ai-message-text">Connect to your AirSentinel device to receive personalized health recommendations based on your environment data.</div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -446,41 +647,6 @@
             </div>
         </div>
 
-        <!-- Add this section after the Device Controls section -->
-        <div class="section">
-            <div class="section-header">
-                <h3><i class="fas fa-gamepad"></i> Direct ESP32 Control</h3>
-            </div>
-            <div class="direct-controls">
-                <div class="control-buttons">
-                    <button class="btn btn-control" onclick="sendDirectCommand('led_toggle')">
-                        <i class="fas fa-lightbulb"></i> Toggle LED
-                    </button>
-                    <button class="btn btn-control" onclick="sendDirectCommand('beep')">
-                        <i class="fas fa-bell"></i> Play Beep
-                    </button>
-                    <button class="btn btn-control" onclick="sendDirectCommand('restart')">
-                        <i class="fas fa-redo"></i> Restart ESP32
-                    </button>
-                </div>
-                
-                <div class="direct-test">
-                    <h4>Test Connection to ESP32:</h4>
-                    <div class="test-buttons">
-                        <button class="btn btn-small" onclick="testESP32Connection()">
-                            <i class="fas fa-plug"></i> Test Connection
-                        </button>
-                        <button class="btn btn-small" onclick="getESP32Status()">
-                            <i class="fas fa-info-circle"></i> Get Status
-                        </button>
-                    </div>
-                    <div id="esp32Status" class="status-message">
-                        <!-- Status will appear here -->
-                    </div>
-                </div>
-            </div>
-        </div>
-        
         <!-- System Status -->
         <div class="section">
             <div class="section-header">
@@ -573,6 +739,91 @@
             </div>
         </div>
     </div>
+
+    <!-- Flowise Chatbot Integration -->
+    <script type="module">
+        import Chatbot from "https://cdn.jsdelivr.net/npm/flowise-embed/dist/web.js"
+        
+        let flowiseChatbot = null;
+        
+        window.initializeFlowiseChatbot = function() {
+            const container = document.getElementById('flowise-chatbot');
+            if (!container) {
+                console.error('Flowise container not found');
+                return;
+            }
+            
+            // Clear container
+            container.innerHTML = '';
+            
+            // Initialize chatbot
+            Chatbot.init({
+                chatflowid: "92c06451-fc3a-4efe-9607-53ab51f3452f",
+                apiHost: "https://cloud.flowiseai.com",
+                theme: {
+                    button: {
+                        display: 'none'
+                    },
+                    chatWindow: {
+                        showTitle: false,
+                        welcomeMessage: 'Hello! I\'m your AirSentinel Health Assistant. I can help you understand your air quality data and provide health recommendations. How can I assist you today?',
+                        backgroundColor: '#ffffff',
+                        height: 450,
+                        width: '100%',
+                        fontSize: 14,
+                        botMessage: {
+                            backgroundColor: '#f0f7ff',
+                            textColor: '#303235',
+                            showAvatar: true,
+                            avatarSrc: 'https://cdn-icons-png.flaticon.com/512/4712/4712027.png'
+                        },
+                        userMessage: {
+                            backgroundColor: '#3B81F6',
+                            textColor: '#ffffff',
+                            showAvatar: true,
+                            avatarSrc: 'https://cdn-icons-png.flaticon.com/512/847/847969.png'
+                        },
+                        textInput: {
+                            placeholder: 'Ask about air quality, health tips, or sensor data...',
+                            backgroundColor: '#ffffff',
+                            textColor: '#303235',
+                            sendButtonColor: '#3B81F6'
+                        },
+                        footer: {
+                            textColor: '#303235',
+                            text: 'Powered by',
+                            company: 'Flowise',
+                            companyLink: 'https://flowiseai.com'
+                        }
+                    }
+                }
+            }).then((chatbot) => {
+                flowiseChatbot = chatbot;
+                console.log('✅ Flowise chatbot initialized');
+                
+                // Send initial message with sensor data
+                setTimeout(() => {
+                    if (window.currentSensorData) {
+                        const sensorData = window.currentSensorData;
+                        const initialMessage = `Current sensor readings: Temperature: ${sensorData.temperature}°C, Humidity: ${sensorData.humidity}%, Air Quality: ${sensorData.air_quality} PPM, CO₂: ${sensorData.co2} PPM. How can I help you with this data?`;
+                        // Note: We can't directly send messages as user, but the system knows the context
+                    }
+                }, 2000);
+            }).catch((error) => {
+                console.error('❌ Failed to initialize Flowise chatbot:', error);
+                container.innerHTML = 
+                    '<div style="padding: 20px; text-align: center; color: #f44336;">' +
+                    '<i class="fas fa-exclamation-triangle"></i> Failed to load AI chatbot. Please try again.' +
+                    '</div>';
+            });
+        };
+        
+        window.cleanupFlowiseChatbot = function() {
+            if (flowiseChatbot) {
+                flowiseChatbot = null;
+            }
+        };
+    </script>
     
     <!-- QR Code Library -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.0/build/qrcode.min.js"></script>
