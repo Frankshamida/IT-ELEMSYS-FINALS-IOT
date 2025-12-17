@@ -1,5 +1,10 @@
-// Configuration
-const ESP32_BASE_URL = 'http://192.168.4.1';
+// Configuration - Multi-mode Support
+const CONFIG = {
+    LOCAL_IP: '192.168.4.1',
+    CLOUD_API: 'https://air-sentinel-taupe.vercel.app/api/esp32-proxy',
+    DEFAULT_DEVICE_IP: '192.168.4.1'
+};
+
 const API_ENDPOINTS = {
     status: '/api/status',
     toggleLED: '/api/led/toggle',
@@ -23,12 +28,31 @@ let state = {
     maxRetries: 3,
     updateInterval: null,
     lastUpdateTime: null,
+    connectionMode: 'local', // 'local' or 'cloud'
+    deviceIp: CONFIG.DEFAULT_DEVICE_IP,
     deviceInfo: {
         ssid: 'AirSentinel',
         password: '1234567890',
-        ip: '192.168.4.1'
+        ip: CONFIG.LOCAL_IP
     }
 };
+
+// Function to get correct base URL based on connection mode
+function getESP32URL(endpoint) {
+    if (state.connectionMode === 'cloud') {
+        return `${CONFIG.CLOUD_API}?endpoint=${encodeURIComponent(endpoint)}&deviceIp=${encodeURIComponent(state.deviceIp)}`;
+    } else {
+        return `http://${state.deviceIp}${endpoint}`;
+    }
+}
+
+// Function to extract actual data from cloud proxy response
+function extractResponseData(response) {
+    if (state.connectionMode === 'cloud' && response.data) {
+        return response.data;
+    }
+    return response;
+}
 
 // DOM Elements
 const elements = {
@@ -79,40 +103,80 @@ function hideDisconnectedOverlay() {
     elements.disconnectedOverlay.classList.remove('active');
 }
 
-// Connection Management
+// Connection Management - Updated for multi-mode
 async function checkConnection() {
     try {
         updateConnectionStatus('connecting', 'Checking connection...');
         
-        const response = await fetch(`${ESP32_BASE_URL}${API_ENDPOINTS.status}`, {
+        // Try local connection first
+        try {
+            state.connectionMode = 'local';
+            const localUrl = `http://${state.deviceIp}${API_ENDPOINTS.status}`;
+            
+            const response = await fetch(localUrl, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                signal: AbortSignal.timeout(3000)
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                state.isConnected = true;
+                state.connectionRetries = 0;
+                
+                updateConnectionStatus('connected', `Connected to AirSentinel (Local: ${state.deviceIp})`);
+                elements.connectionBanner.classList.add('hidden');
+                hideDisconnectedOverlay();
+                hideSetupModal();
+                
+                console.log('✅ Connected locally to ESP32');
+                return data;
+            }
+        } catch (localError) {
+            console.log('⚠️ Local connection failed, trying cloud proxy...');
+        }
+        
+        // Try cloud proxy connection
+        state.connectionMode = 'cloud';
+        const cloudUrl = getESP32URL(API_ENDPOINTS.status);
+        
+        const response = await fetch(cloudUrl, {
             method: 'GET',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-Device-IP': state.deviceIp
             },
             signal: AbortSignal.timeout(5000)
         });
         
         if (response.ok) {
-            const data = await response.json();
+            const cloudResponse = await response.json();
+            const data = extractResponseData(cloudResponse);
+            
             state.isConnected = true;
             state.connectionRetries = 0;
             
-            updateConnectionStatus('connected', 'Connected to AirSentinel');
+            updateConnectionStatus('connected', `Connected to AirSentinel (Cloud Proxy: ${state.deviceIp})`);
             elements.connectionBanner.classList.add('hidden');
             hideDisconnectedOverlay();
             hideSetupModal();
             
+            console.log('✅ Connected via cloud proxy to ESP32');
             return data;
-        } else {
-            throw new Error('Failed to fetch status');
         }
+        
+        throw new Error('Cloud proxy failed');
+        
     } catch (error) {
         console.warn('Connection check failed:', error);
         state.connectionRetries++;
         
         if (state.connectionRetries >= state.maxRetries) {
             state.isConnected = false;
-            updateConnectionStatus('disconnected', 'Disconnected - Connect to AirSentinel WiFi');
+            state.connectionMode = 'local'; // Reset to local
+            updateConnectionStatus('disconnected', `Disconnected - Connect to AirSentinel WiFi or check device IP`);
             elements.connectionBanner.classList.remove('hidden');
             showDisconnectedOverlay();
         } else {
@@ -154,16 +218,20 @@ async function fetchSensorData() {
     }
     
     try {
-        const response = await fetch(`${ESP32_BASE_URL}${API_ENDPOINTS.status}`, {
+        const url = getESP32URL(API_ENDPOINTS.status);
+        const response = await fetch(url, {
             method: 'GET',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-Device-IP': state.deviceIp
             },
             signal: AbortSignal.timeout(3000)
         });
         
         if (response.ok) {
-            const data = await response.json();
+            const cloudResponse = await response.json();
+            const data = extractResponseData(cloudResponse);
+            
             updateDashboard(data);
             updateSensorHistory(data);
             updateCurrentChart();
@@ -288,15 +356,18 @@ function updateLEDStatus() {
 // Device Control Functions
 async function toggleLED() {
     try {
-        const response = await fetch(`${ESP32_BASE_URL}${API_ENDPOINTS.toggleLED}`, {
+        const url = getESP32URL(API_ENDPOINTS.toggleLED);
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-Device-IP': state.deviceIp
             }
         });
         
         if (response.ok) {
-            const data = await response.json();
+            const cloudResponse = await response.json();
+            const data = extractResponseData(cloudResponse);
             state.ledState = data.ledState === 'ON';
             updateLEDStatus();
         }
@@ -317,15 +388,18 @@ async function calibrateSensor() {
         calibrateBtn.innerHTML = '<i class="fas fa-cog fa-spin"></i> Calibrating...';
         calibrateBtn.disabled = true;
         
-        const response = await fetch(`${ESP32_BASE_URL}${API_ENDPOINTS.calibrate}`, {
+        const url = getESP32URL(API_ENDPOINTS.calibrate);
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-Device-IP': state.deviceIp
             }
         });
         
         if (response.ok) {
-            const data = await response.json();
+            const cloudResponse = await response.json();
+            const data = extractResponseData(cloudResponse);
             alert(`Calibration started: ${data.message}\nNew baseline: ${data.baseline}`);
         }
         
@@ -342,16 +416,19 @@ async function calibrateSensor() {
 
 async function setLCDMode(mode) {
     try {
-        const response = await fetch(`${ESP32_BASE_URL}${API_ENDPOINTS.lcd}`, {
+        const url = getESP32URL(API_ENDPOINTS.lcd);
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-Device-IP': state.deviceIp
             },
             body: JSON.stringify({ mode: mode })
         });
         
         if (response.ok) {
-            const data = await response.json();
+            const cloudResponse = await response.json();
+            const data = extractResponseData(cloudResponse);
             state.currentLCDMode = mode;
             
             const displayText = document.getElementById('currentLCDDisplay');
@@ -736,9 +813,105 @@ function toggleTheme() {
     }
 }
 
+// Device Settings Functions
+function showDeviceSettingsModal() {
+    const modal = document.getElementById('deviceSettingsModal');
+    if (modal) {
+        modal.classList.add('active');
+        document.getElementById('deviceIpInput').value = state.deviceIp;
+        document.getElementById('connectionModeSelect').value = state.connectionMode;
+        updateCurrentConnectionDisplay();
+    }
+}
+
+function hideDeviceSettingsModal() {
+    const modal = document.getElementById('deviceSettingsModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+function updateDeviceIP() {
+    const newIP = document.getElementById('deviceIpInput').value.trim();
+    if (!newIP) {
+        alert('Please enter a valid IP address');
+        return;
+    }
+    
+    state.deviceIp = newIP;
+    state.deviceInfo.ip = newIP;
+    state.connectionRetries = 0; // Reset retries for new IP
+    
+    updateCurrentConnectionDisplay();
+    showNotification(`Device IP updated to ${newIP}`, 'success');
+    checkConnection();
+}
+
+function updateConnectionMode() {
+    const mode = document.getElementById('connectionModeSelect').value;
+    state.connectionMode = mode;
+    state.connectionRetries = 0;
+    
+    const descriptions = {
+        'local': 'Connect to the same WiFi network as ESP32',
+        'cloud': 'Use cloud proxy for remote access (slower)',
+        'auto': 'Automatically try local first, then cloud'
+    };
+    
+    document.getElementById('modeDescription').textContent = descriptions[mode] || '';
+    updateCurrentConnectionDisplay();
+    showNotification(`Connection mode changed to ${mode}`, 'info');
+}
+
+function updateCurrentConnectionDisplay() {
+    const statusMap = {
+        'connected': '🟢 Connected',
+        'connecting': '🟡 Connecting...',
+        'disconnected': '🔴 Disconnected'
+    };
+    
+    document.getElementById('currentMode').textContent = state.connectionMode;
+    document.getElementById('currentIP').textContent = state.deviceIp;
+    
+    const status = state.isConnected ? 'connected' : 'disconnected';
+    document.getElementById('currentStatus').textContent = statusMap[status] || status;
+}
+
+async function testConnection() {
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Testing...';
+    btn.disabled = true;
+    
+    try {
+        const result = await checkConnection();
+        if (result) {
+            showNotification('✅ Connection successful!', 'success');
+        } else {
+            showNotification('❌ Connection failed', 'info');
+        }
+    } catch (error) {
+        showNotification('❌ Connection error: ' + error.message, 'info');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+// Initialize UI
+function initializeUI() {
+    const modal = document.getElementById('deviceSettingsModal');
+    if (modal) {
+        elements.deviceSettingsModal = modal;
+    }
+}
+
 // Initialize everything
 async function initialize() {
     console.log('Initializing AirSentinel Dashboard...');
+    
+    // Initialize UI
+    initializeUI();
     
     // Show setup modal on first load
     setTimeout(showSetupModal, 1000);
@@ -826,3 +999,8 @@ window.switchChart = switchChart;
 window.showSetupModal = showSetupModal;
 window.hideSetupModal = hideSetupModal;
 window.toggleTheme = toggleTheme;
+window.showDeviceSettingsModal = showDeviceSettingsModal;
+window.hideDeviceSettingsModal = hideDeviceSettingsModal;
+window.updateDeviceIP = updateDeviceIP;
+window.updateConnectionMode = updateConnectionMode;
+window.testConnection = testConnection;

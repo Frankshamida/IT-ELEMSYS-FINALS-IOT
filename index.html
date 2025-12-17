@@ -100,6 +100,9 @@
                 </div>
             </div>
             <div class="header-actions">
+                <button class="btn btn-icon" onclick="showDeviceSettingsModal()" title="Device Settings">
+                    <i class="fas fa-cog"></i>
+                </button>
                 <button class="btn btn-icon" onclick="showSetupModal()" title="Connection Help">
                     <i class="fas fa-wifi"></i>
                 </button>
@@ -109,6 +112,64 @@
                 <button class="btn btn-icon" onclick="toggleTheme()" title="Toggle Theme">
                     <i class="fas fa-moon"></i>
                 </button>
+            </div>
+        </div>
+        
+        <!-- Device Settings Modal -->
+        <div id="deviceSettingsModal" class="modal">
+            <div class="modal-content settings-modal">
+                <div class="modal-header">
+                    <h2>Device Settings</h2>
+                    <button class="btn-close" onclick="hideDeviceSettingsModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="settings-group">
+                        <label for="deviceIpInput">Device IP Address:</label>
+                        <div class="input-group">
+                            <input type="text" id="deviceIpInput" placeholder="192.168.4.1" value="192.168.4.1">
+                            <button class="btn btn-secondary" onclick="updateDeviceIP()">Save</button>
+                        </div>
+                        <small>Local network IP (e.g., 192.168.x.x)</small>
+                    </div>
+                    
+                    <div class="settings-group">
+                        <label for="connectionModeSelect">Connection Mode:</label>
+                        <select id="connectionModeSelect" onchange="updateConnectionMode()">
+                            <option value="local">Local WiFi (Same network)</option>
+                            <option value="cloud">Cloud Proxy (Remote access)</option>
+                            <option value="auto">Auto-detect (Try local first)</option>
+                        </select>
+                        <small id="modeDescription">Connect to the same WiFi network as ESP32</small>
+                    </div>
+                    
+                    <div class="settings-group">
+                        <label>Current Connection:</label>
+                        <div class="status-display">
+                            <div><strong>Mode:</strong> <span id="currentMode">local</span></div>
+                            <div><strong>Device IP:</strong> <span id="currentIP">192.168.4.1</span></div>
+                            <div><strong>Status:</strong> <span id="currentStatus">Disconnected</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-group">
+                        <label>Quick Tips:</label>
+                        <ul class="tips-list">
+                            <li><strong>Local Mode:</strong> Device and website must be on same WiFi network</li>
+                            <li><strong>Cloud Mode:</strong> Works remotely but requires cloud proxy</li>
+                            <li><strong>Auto Mode:</strong> Tries local first, falls back to cloud</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button class="btn btn-primary" onclick="testConnection()">
+                        <i class="fas fa-plug"></i> Test Connection
+                    </button>
+                    <button class="btn btn-secondary" onclick="hideDeviceSettingsModal()">Close</button>
+                </div>
             </div>
         </div>
         
