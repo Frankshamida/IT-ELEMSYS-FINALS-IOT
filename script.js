@@ -447,30 +447,65 @@ function getLocation() {
 }
 
 // Request location with proper error handling
+// ============================================
+// Updated Location Function for Better Accuracy
+// ============================================
 function requestUserLocation() {
+    if (!navigator.geolocation) {
+        console.warn("Geolocation not supported.");
+        getLocationByIP(); // Fallback to IP geolocation
+        return;
+    }
+
+    // Clear any existing location watch to avoid duplicates
+    if (window.locationWatchId) {
+        navigator.geolocation.clearWatch(window.locationWatchId);
+    }
+
     const options = {
-        enableHighAccuracy: true, // Request better accuracy[citation:4]
-        timeout: 10000, // 10 second timeout[citation:4]
-        maximumAge: 30000 // Cache location for 30 seconds
+        enableHighAccuracy: true, // Crucial for GPS use
+        timeout: 15000, // Wait up to 15 seconds for a good signal
+        maximumAge: 0 // Don't use cached positions
     };
-    
-    navigator.geolocation.getCurrentPosition(
+
+    console.log('🛰️ Starting high-accuracy location watch...');
+
+    // Use watchPosition instead of getCurrentPosition[citation:4]
+    window.locationWatchId = navigator.geolocation.watchPosition(
         (position) => {
-            // Success callback
-            state.userLocation = {
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-                accuracy: position.coords.accuracy,
-                timestamp: new Date(position.timestamp)
-            };
+            // The position object contains an 'accuracy' value in meters
+            const accuracy = position.coords.accuracy;
+            console.log(`📍 Position received. Accuracy: ${accuracy.toFixed(1)} meters`);
             
-            state.locationPermission = true;
-            updateLocationDisplay();
-            saveLocationToFirebase();
-            showNotification("Location updated successfully", "success");
-            
-            // Now fetch weather/air quality data based on coordinates
-            fetchEnvironmentalData(position.coords.latitude, position.coords.longitude);
+            // Accept positions with accuracy better than 50 meters for a good balance
+            // You can adjust this threshold (e.g., 20m for very high accuracy)
+            if (accuracy < 50) {
+                // Success - store the accurate location
+                state.userLocation = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: accuracy,
+                    timestamp: new Date(position.timestamp)
+                };
+                
+                state.locationPermission = true;
+                updateLocationDisplay();
+                saveLocationToFirebase();
+                
+                // Stop watching once we have a sufficiently accurate position
+                navigator.geolocation.clearWatch(window.locationWatchId);
+                console.log('✅ Accurate location locked. Watch stopped.');
+                
+                // Fetch environmental data for this location
+                fetchEnvironmentalData(state.userLocation.latitude, state.userLocation.longitude);
+                
+                // Show success (optional)
+                showNotification(`Location accuracy: ${accuracy.toFixed(0)}m`, 'success');
+            } else {
+                // Position is still not accurate enough
+                console.log(`⏳ Waiting for better accuracy (current: ${accuracy.toFixed(0)}m)...`);
+                elements.locationText.textContent = `Refining location... (${accuracy.toFixed(0)}m)`;
+            }
         },
         (error) => {
             // Enhanced error handling[citation:2][citation:4]
@@ -479,15 +514,15 @@ function requestUserLocation() {
             switch(error.code) {
                 case error.PERMISSION_DENIED:
                     elements.locationText.textContent = "Location permission denied";
-                    showNotification("Please enable location permissions to get local weather data.", "warning");
+                    showNotification("Please enable location permissions for accurate weather data.", "warning");
                     break;
                 case error.POSITION_UNAVAILABLE:
                     elements.locationText.textContent = "Location unavailable";
-                    showNotification("Could not get location. Using estimated location.", "info");
+                    showNotification("GPS signal weak. Using estimated location.", "info");
                     break;
                 case error.TIMEOUT:
                     elements.locationText.textContent = "Location request timed out";
-                    showNotification("Location request took too long.", "info");
+                    showNotification("GPS taking too long. Using fallback.", "info");
                     break;
                 default:
                     elements.locationText.textContent = "Location error occurred";
@@ -496,6 +531,10 @@ function requestUserLocation() {
             
             // Always fall back to IP-based location
             getLocationByIP();
+            // Clear the watch ID on error
+            if (window.locationWatchId) {
+                navigator.geolocation.clearWatch(window.locationWatchId);
+            }
         },
         options
     );
