@@ -5,139 +5,217 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AirSentinel - Air Quality Monitor</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌫️</text></svg>">
     <script src="script.js" defer></script>
 </head>
 <body>
-    <!-- Connection Status Overlay -->
-    <div class="connection-overlay" id="connectionOverlay">
-        <div class="connection-icon">⚠️</div>
-        <div class="connection-message">Device Is Disconnected</div>
-        <div class="connection-details">
-            Your phone is no longer connected to the AirSentinel device. 
-            Please reconnect to the WiFi network "AirSentinel" to continue monitoring.
+    <!-- Connection Setup Modal -->
+    <div id="setupModal" class="modal">
+        <div class="modal-content setup-modal">
+            <div class="setup-header">
+                <div class="setup-icon">
+                    <i class="fas fa-wifi"></i>
+                </div>
+                <h2>Connect to AirSentinel</h2>
+                <p>Follow these steps to connect to your device</p>
+            </div>
+            
+            <div class="setup-steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Connect to WiFi</h3>
+                        <p>Go to your device's WiFi settings and connect to:</p>
+                        <div class="wifi-info">
+                            <strong>Network:</strong> <span id="wifiSsid">AirSentinel</span><br>
+                            <strong>Password:</strong> <span id="wifiPassword">1234567890</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Keep this page open</h3>
+                        <p>Don't close this browser tab. It will automatically detect your device.</p>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Wait for connection</h3>
+                        <p>The system will automatically connect to your AirSentinel device.</p>
+                        <div class="connection-status" id="modalConnectionStatus">
+                            <i class="fas fa-circle-notch fa-spin"></i> Searching for device...
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="setup-actions">
+                <button class="btn btn-primary" onclick="checkConnection()">
+                    <i class="fas fa-sync-alt"></i> Check Connection Now
+                </button>
+                <button class="btn btn-secondary" onclick="hideSetupModal()">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+            
+            <div class="setup-qrcode">
+                <div id="qrCodeContainer"></div>
+                <p>Scan to view WiFi credentials</p>
+            </div>
         </div>
-        <button class="reconnect-button" onclick="checkConnection()">
-            <span>🔗</span> Try to Reconnect
-        </button>
+    </div>
+
+    <!-- Disconnected Overlay -->
+    <div id="disconnectedOverlay" class="overlay">
+        <div class="overlay-content">
+            <div class="overlay-icon">
+                <i class="fas fa-unlink"></i>
+            </div>
+            <h2>Device Disconnected</h2>
+            <p>Your device is no longer connected to AirSentinel WiFi.</p>
+            <p>Please reconnect to the "AirSentinel" network.</p>
+            <button class="btn btn-primary" onclick="showSetupModal()">
+                <i class="fas fa-wifi"></i> Show Connection Instructions
+            </button>
+        </div>
     </div>
 
     <div class="container">
-        <!-- Header -->
+        <!-- Header with Connection Status -->
         <div class="header">
             <div class="logo">
-                <div class="logo-icon">A</div>
+                <div class="logo-icon">
+                    <i class="fas fa-wind"></i>
+                </div>
                 <div class="logo-text">AirSentinel</div>
+                <div class="connection-indicator" id="connectionIndicator">
+                    <span class="indicator-dot"></span>
+                    <span id="connectionText">Connecting...</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-icon" onclick="showSetupModal()" title="Connection Help">
+                    <i class="fas fa-wifi"></i>
+                </button>
+                <button class="btn btn-icon" onclick="refreshData()" title="Refresh">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button class="btn btn-icon" onclick="toggleTheme()" title="Toggle Theme">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Connection Banner -->
+        <div class="connection-banner" id="connectionBanner">
+            <div class="banner-content">
+                <i class="fas fa-info-circle"></i>
+                <span>Connect to <strong>AirSentinel</strong> WiFi to access your device</span>
+                <button class="btn btn-small" onclick="showSetupModal()">Show Instructions</button>
             </div>
         </div>
         
         <!-- Main Dashboard -->
         <div class="dashboard">
             <div class="card temperature-card">
-                <div class="card-title">
-                    <span>🌡️</span> Temperature
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-thermometer-half"></i> Temperature
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn-icon-small" onclick="setLCDMode('temperature')" title="Show on LCD">
+                            <i class="fas fa-tv"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-content">
-                    <span id="temperature">--</span>
-                    <span class="card-unit">°C</span>
+                    <div class="card-value" id="temperature">--</div>
+                    <div class="card-unit">°C</div>
                 </div>
-                <div class="reading-time" id="tempTime"></div>
+                <div class="card-footer">
+                    <div class="card-time" id="tempTime">--:--:--</div>
+                </div>
             </div>
             
             <div class="card humidity-card">
-                <div class="card-title">
-                    <span>💧</span> Humidity
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-tint"></i> Humidity
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn-icon-small" onclick="setLCDMode('humidity')" title="Show on LCD">
+                            <i class="fas fa-tv"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-content">
-                    <span id="humidity">--</span>
-                    <span class="card-unit">%</span>
+                    <div class="card-value" id="humidity">--</div>
+                    <div class="card-unit">%</div>
                 </div>
-                <div class="reading-time" id="humTime"></div>
+                <div class="card-footer">
+                    <div class="card-time" id="humTime">--:--:--</div>
+                </div>
             </div>
             
             <div class="card airquality-card">
-                <div class="card-title">
-                    <span>🌫️</span> Air Quality
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-wind"></i> Air Quality
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn-icon-small" onclick="setLCDMode('airquality')" title="Show on LCD">
+                            <i class="fas fa-tv"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-content">
-                    <span id="airQuality">--</span>
-                    <span class="card-unit">PPM</span>
+                    <div class="card-value" id="airQuality">--</div>
+                    <div class="card-unit">PPM</div>
                 </div>
-                <div class="aqi-indicator">
-                    <div class="aqi-dot" id="aqiDot"></div>
-                    <span class="aqi-label" id="aqiLabel">Good</span>
+                <div class="card-footer">
+                    <div class="aqi-indicator">
+                        <div class="aqi-dot" id="aqiDot"></div>
+                        <span class="aqi-label" id="aqiLabel">Good</span>
+                    </div>
                 </div>
             </div>
             
             <div class="card co2-card">
-                <div class="card-title">
-                    <span>☁️</span> CO₂ Level
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-cloud"></i> CO₂ Level
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn-icon-small" onclick="setLCDMode('co2')" title="Show on LCD">
+                            <i class="fas fa-tv"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-content">
-                    <span id="co2Level">--</span>
-                    <span class="card-unit">PPM</span>
+                    <div class="card-value" id="co2Level">--</div>
+                    <div class="card-unit">PPM</div>
                 </div>
-                <div class="reading-time" id="co2Time"></div>
-            </div>
-        </div>
-        
-        <!-- LCD Control Section -->
-        <div class="lcd-controls">
-            <div class="lcd-title">
-                <span>📺</span> LCD Display Control
-            </div>
-            
-            <div class="lcd-buttons">
-                <button class="lcd-btn" onclick="sendLCDCommand('welcome')">
-                    <span>🏠</span> Welcome Screen
-                </button>
-                
-                <button class="lcd-btn" onclick="sendLCDCommand('temperature')">
-                    <span>🌡️</span> Temperature
-                </button>
-                
-                <button class="lcd-btn" onclick="sendLCDCommand('humidity')">
-                    <span>💧</span> Humidity
-                </button>
-                
-                <button class="lcd-btn" onclick="sendLCDCommand('airquality')">
-                    <span>🌫️</span> Air Quality
-                </button>
-                
-                <button class="lcd-btn" onclick="sendLCDCommand('co2')">
-                    <span>☁️</span> CO₂ Level
-                </button>
-                
-                <button class="lcd-btn" onclick="sendLCDCommand('alldata')">
-                    <span>📊</span> All Data
-                </button>
-            </div>
-            
-            <div class="lcd-info">
-                Current LCD Display: <strong id="currentLCDDisplay">Welcome Screen</strong>
-            </div>
-        </div>
-        
-        <!-- AI Health Recommendations -->
-        <div class="ai-card">
-            <div class="ai-header">
-                <div class="ai-icon">🤖</div>
-                <div class="ai-title">AI Health Assistant</div>
-            </div>
-            <div class="ai-recommendations" id="aiRecommendations">
-                <div class="ai-message">
-                    <div class="ai-message-icon">💡</div>
-                    <div class="ai-message-content">
-                        <div class="ai-message-title">Waiting for data...</div>
-                        <div class="ai-message-text">Connect sensors to get personalized health recommendations</div>
-                    </div>
+                <div class="card-footer">
+                    <div class="card-time" id="co2Time">--:--:--</div>
                 </div>
             </div>
         </div>
         
         <!-- Air Quality Gauge -->
-        <div class="card" style="margin-bottom: 20px;">
-            <div class="card-title">
-                <span>📊</span> Air Quality Index
+        <div class="section">
+            <div class="section-header">
+                <h3><i class="fas fa-chart-line"></i> Air Quality Index</h3>
+                <div class="section-actions">
+                    <button class="btn btn-small" onclick="calibrateSensor()">
+                        <i class="fas fa-cog"></i> Calibrate
+                    </button>
+                </div>
             </div>
             <div class="gauge-container">
                 <div class="gauge">
@@ -167,107 +245,238 @@
             </div>
         </div>
         
-        <!-- Charts Section -->
-        <div class="charts-container">
-            <div class="chart-header">
-                <div class="chart-title">Sensor History</div>
-                <div class="chart-tabs">
-                    <div class="chart-tab active" onclick="switchChart('temperature')">Temperature</div>
-                    <div class="chart-tab" onclick="switchChart('humidity')">Humidity</div>
-                    <div class="chart-tab" onclick="switchChart('airquality')">Air Quality</div>
+        <!-- LCD Control Section -->
+        <div class="section">
+            <div class="section-header">
+                <h3><i class="fas fa-tv"></i> LCD Display Control</h3>
+            </div>
+            <div class="lcd-controls">
+                <div class="lcd-buttons">
+                    <button class="lcd-btn" onclick="setLCDMode('welcome')">
+                        <i class="fas fa-home"></i> Welcome
+                    </button>
+                    <button class="lcd-btn" onclick="setLCDMode('temperature')">
+                        <i class="fas fa-thermometer-half"></i> Temperature
+                    </button>
+                    <button class="lcd-btn" onclick="setLCDMode('humidity')">
+                        <i class="fas fa-tint"></i> Humidity
+                    </button>
+                    <button class="lcd-btn" onclick="setLCDMode('airquality')">
+                        <i class="fas fa-wind"></i> Air Quality
+                    </button>
+                    <button class="lcd-btn" onclick="setLCDMode('co2')">
+                        <i class="fas fa-cloud"></i> CO₂
+                    </button>
+                    <button class="lcd-btn" onclick="setLCDMode('alldata')">
+                        <i class="fas fa-chart-bar"></i> All Data
+                    </button>
                 </div>
-            </div>
-            
-            <div class="chart-wrapper" id="temperatureChart" style="display: block;">
-                <div class="chart-grid" id="tempGrid"></div>
-                <div class="chart-bars" id="temperatureBars"></div>
-                <div class="chart-axis"></div>
-            </div>
-            
-            <div class="chart-wrapper" id="humidityChart" style="display: none;">
-                <div class="chart-grid" id="humGrid"></div>
-                <div class="chart-bars" id="humidityBars"></div>
-                <div class="chart-axis"></div>
-            </div>
-            
-            <div class="chart-wrapper" id="airqualityChart" style="display: none;">
-                <div class="chart-grid" id="airGrid"></div>
-                <div class="chart-bars" id="airqualityBars"></div>
-                <div class="chart-axis"></div>
+                <div class="lcd-info">
+                    <i class="fas fa-info-circle"></i>
+                    Current LCD Display: <strong id="currentLCDDisplay">Welcome Screen</strong>
+                </div>
             </div>
         </div>
         
-        <!-- Controls -->
-        <div class="controls">
-            <div class="control-group">
-                <div class="led-status">
-                    <div class="led-indicator" id="ledIndicator"></div>
-                    <span>LED Status: <strong id="ledStatusText">OFF</strong></span>
+        <!-- AI Health Recommendations -->
+        <div class="section">
+            <div class="section-header">
+                <h3><i class="fas fa-robot"></i> AI Health Assistant</h3>
+                <div class="section-actions">
+                    <button class="btn btn-small" onclick="refreshAI()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            <div class="ai-recommendations" id="aiRecommendations">
+                <div class="ai-message">
+                    <div class="ai-message-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <div class="ai-message-content">
+                        <div class="ai-message-title">Connect to get started</div>
+                        <div class="ai-message-text">Connect to your AirSentinel device to receive personalized health recommendations based on your environment data.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts Section -->
+        <div class="section">
+            <div class="section-header">
+                <h3><i class="fas fa-chart-bar"></i> Sensor History</h3>
+                <div class="chart-tabs">
+                    <button class="chart-tab active" onclick="switchChart('temperature')">
+                        <i class="fas fa-thermometer-half"></i> Temperature
+                    </button>
+                    <button class="chart-tab" onclick="switchChart('humidity')">
+                        <i class="fas fa-tint"></i> Humidity
+                    </button>
+                    <button class="chart-tab" onclick="switchChart('airquality')">
+                        <i class="fas fa-wind"></i> Air Quality
+                    </button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-wrapper" id="temperatureChart">
+                    <div class="chart" id="temperatureBars"></div>
+                    <div class="chart-axis"></div>
+                </div>
+                <div class="chart-wrapper" id="humidityChart" style="display: none;">
+                    <div class="chart" id="humidityBars"></div>
+                    <div class="chart-axis"></div>
+                </div>
+                <div class="chart-wrapper" id="airqualityChart" style="display: none;">
+                    <div class="chart" id="airqualityBars"></div>
+                    <div class="chart-axis"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Device Controls -->
+        <div class="section">
+            <div class="section-header">
+                <h3><i class="fas fa-sliders-h"></i> Device Controls</h3>
+            </div>
+            <div class="controls-grid">
+                <div class="control-card">
+                    <div class="control-header">
+                        <i class="fas fa-lightbulb"></i>
+                        <h4>Built-in LED</h4>
+                    </div>
+                    <div class="control-content">
+                        <div class="led-status">
+                            <div class="led-indicator" id="ledIndicator"></div>
+                            <span>Status: <strong id="ledStatusText">OFF</strong></span>
+                        </div>
+                        <button class="btn btn-control" onclick="toggleLED()">
+                            <i class="fas fa-power-off"></i> Toggle LED
+                        </button>
+                    </div>
                 </div>
                 
-                <div class="button-group">
-                    <button class="btn btn-primary" onclick="toggleLED()">
-                        <span>💡</span> LED
-                    </button>
-                    
-                    <button class="btn btn-success" onclick="refreshSensors()">
-                        <span>🔄</span> Refresh
-                    </button>
-                    
-                    <button class="btn btn-warning" onclick="calibrateMQ135()">
-                        <span>⚙️</span> Calibrate (30s)
-                    </button>
-                    
-                    <button class="btn btn-danger" onclick="location.reload()">
-                        <span>📱</span> Reload
-                    </button>
+                <div class="control-card">
+                    <div class="control-header">
+                        <i class="fas fa-cogs"></i>
+                        <h4>Sensor Calibration</h4>
+                    </div>
+                    <div class="control-content">
+                        <p>Calibrate MQ-135 sensor in clean air (takes 30 seconds)</p>
+                        <button class="btn btn-control btn-warning" onclick="calibrateSensor()">
+                            <i class="fas fa-cog"></i> Start Calibration
+                        </button>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="status-bar">
-                <div class="status-item">
-                    <span class="pulse">●</span>
-                    <span>ESP32 | DHT11:GPIO32 | MQ-135:GPIO35</span>
-                </div>
-                <div class="status-item">
-                    <span id="readingTime">Updated: --:--:--</span>
-                </div>
-                <div class="status-item">
-                    <span id="sensorStatus">All Sensors OK</span>
+                
+                <div class="control-card">
+                    <div class="control-header">
+                        <i class="fas fa-sync-alt"></i>
+                        <h4>System Refresh</h4>
+                    </div>
+                    <div class="control-content">
+                        <p>Force refresh all sensor readings</p>
+                        <button class="btn btn-control" onclick="refreshData()">
+                            <i class="fas fa-redo"></i> Refresh All
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <!-- System Info -->
-        <div class="dashboard">
-            <div class="card">
-                <div class="card-title">
-                    <span>⏱️</span> Uptime
-                </div>
-                <div class="card-content" id="uptime">00:00:00</div>
+        <!-- System Status -->
+        <div class="section">
+            <div class="section-header">
+                <h3><i class="fas fa-info-circle"></i> System Status</h3>
             </div>
-            
-            <div class="card">
-                <div class="card-title">
-                    <span>💾</span> Memory
+            <div class="status-grid">
+                <div class="status-item">
+                    <div class="status-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="status-content">
+                        <div class="status-label">Uptime</div>
+                        <div class="status-value" id="uptime">00:00:00</div>
+                    </div>
                 </div>
-                <div class="card-content" id="freeHeap">0 KB</div>
+                
+                <div class="status-item">
+                    <div class="status-icon">
+                        <i class="fas fa-microchip"></i>
+                    </div>
+                    <div class="status-content">
+                        <div class="status-label">Memory</div>
+                        <div class="status-value" id="freeHeap">0 KB</div>
+                    </div>
+                </div>
+                
+                <div class="status-item">
+                    <div class="status-icon">
+                        <i class="fas fa-wifi"></i>
+                    </div>
+                    <div class="status-content">
+                        <div class="status-label">WiFi Clients</div>
+                        <div class="status-value" id="connectedClients">0</div>
+                    </div>
+                </div>
+                
+                <div class="status-item">
+                    <div class="status-icon">
+                        <i class="fas fa-signal"></i>
+                    </div>
+                    <div class="status-content">
+                        <div class="status-label">Analog Raw</div>
+                        <div class="status-value" id="analogRaw">0</div>
+                    </div>
+                </div>
+                
+                <div class="status-item">
+                    <div class="status-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="status-content">
+                        <div class="status-label">Device Ready</div>
+                        <div class="status-value" id="deviceReady">No</div>
+                    </div>
+                </div>
+                
+                <div class="status-item">
+                    <div class="status-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="status-content">
+                        <div class="status-label">Sensor Status</div>
+                        <div class="status-value" id="sensorStatus">--</div>
+                    </div>
+                </div>
             </div>
-            
-            <div class="card">
-                <div class="card-title">
-                    <span>📡</span> WiFi
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <div class="footer-logo">
+                        <i class="fas fa-wind"></i> AirSentinel
+                    </div>
+                    <div class="footer-text">
+                        Air Quality Monitoring System with ESP32
+                    </div>
                 </div>
-                <div class="card-content" id="wifiRSSI">- dBm</div>
-            </div>
-            
-            <div class="card">
-                <div class="card-title">
-                    <span>🔋</span> Analog
+                <div class="footer-stats">
+                    <div class="footer-stat">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Updated: <span id="lastUpdateTime">--:--:--</span></span>
+                    </div>
+                    <div class="footer-stat">
+                        <i class="fas fa-server"></i>
+                        <span>IP: <span id="deviceIP">192.168.4.1</span></span>
+                    </div>
                 </div>
-                <div class="card-content" id="analogRaw">0</div>
             </div>
         </div>
     </div>
+    
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.0/build/qrcode.min.js"></script>
 </body>
 </html>
