@@ -7,6 +7,7 @@ A complete IoT solution for monitoring air quality, temperature, and humidity us
 ## 🎯 Project Overview
 
 AirSentinel is a smart air quality monitoring system that combines:
+
 - **Hardware**: ESP32 microcontroller with DHT11, MQ-135, and LCD display
 - **Backend**: Vercel API with cloud proxy for remote connectivity
 - **Frontend**: Modern responsive web dashboard with real-time updates
@@ -15,6 +16,7 @@ AirSentinel is a smart air quality monitoring system that combines:
 ## ✨ Key Features
 
 ### 📊 Real-Time Monitoring
+
 - Temperature monitoring (°C)
 - Humidity tracking (%)
 - Air quality measurements (PPM)
@@ -22,11 +24,13 @@ AirSentinel is a smart air quality monitoring system that combines:
 - Device uptime and status
 
 ### 🌐 Dual Connection Modes
+
 - **Local WiFi**: Fast direct connection (100-200ms)
 - **Cloud Proxy**: Remote access from anywhere (500-1000ms)
 - **Auto Mode**: Intelligent switching for best performance
 
 ### 🎮 Interactive Dashboard
+
 - Live sensor data with color-coded quality indicators
 - Historical charts and trends (last 8 readings)
 - AI-powered health recommendations
@@ -34,6 +38,7 @@ AirSentinel is a smart air quality monitoring system that combines:
 - Support for light/dark theme
 
 ### 🛠️ Device Controls
+
 - Toggle built-in LED remotely
 - Calibrate air quality sensor
 - Control LCD display modes
@@ -41,6 +46,7 @@ AirSentinel is a smart air quality monitoring system that combines:
 - System status monitoring
 
 ### 📱 Mobile Optimized
+
 - Fully responsive design
 - Touch-friendly interface
 - Progressive Web App (PWA)
@@ -52,6 +58,7 @@ AirSentinel is a smart air quality monitoring system that combines:
 ### For Users
 
 1. **Power on your ESP32**
+
    ```
    The device will create a WiFi hotspot "AirSentinel"
    ```
@@ -59,14 +66,17 @@ AirSentinel is a smart air quality monitoring system that combines:
 2. **Choose your connection method**
 
    **Option A: Local (Same WiFi)**
+
    - Connect to "AirSentinel" WiFi (password: `1234567890`)
    - Open: `http://192.168.4.1`
 
    **Option B: Remote (Cloud)**
+
    - Open: `https://air-sentinel-taupe.vercel.app/`
    - Click Settings ⚙️ → Switch to Cloud mode
 
    **Option C: Auto (Recommended)**
+
    - Open: `https://air-sentinel-taupe.vercel.app/`
    - Settings will auto-detect the best connection
 
@@ -78,18 +88,21 @@ AirSentinel is a smart air quality monitoring system that combines:
 ### For Developers
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/Frankshamida/IT-ELEMSYS-FINALS-IOT.git
    cd IT-ELEMSYS-IOT
    ```
 
 2. **Deploy to Vercel** (optional)
+
    ```bash
    npm install -g vercel
    vercel
    ```
 
 3. **Upload to ESP32**
+
    - Open `ESP32_Code/ESP32_Code.ino` in Arduino IDE
    - Install ESP32 board support
    - Upload to your ESP32 device
@@ -102,11 +115,13 @@ AirSentinel is a smart air quality monitoring system that combines:
 ## 📋 Documentation
 
 ### Getting Started
+
 - **[SETUP_GUIDE.md](SETUP_GUIDE.md)** - Complete hardware and software setup instructions
 - **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Quick reference card and troubleshooting
 - **[INTEGRATION_SUMMARY.md](INTEGRATION_SUMMARY.md)** - Technical integration details
 
 ### Key Sections
+
 1. Hardware wiring and connections
 2. Arduino code upload instructions
 3. Website deployment to Vercel
@@ -116,43 +131,49 @@ AirSentinel is a smart air quality monitoring system that combines:
 
 ## 🔌 Hardware Requirements
 
-| Component | Purpose |
-|-----------|---------|
-| ESP32 Dev Board | Main microcontroller |
-| DHT11 | Temperature & humidity sensor |
-| MQ-135 | Air quality sensor |
-| 16x2 I2C LCD | Display interface |
-| LEDs (4x) | Status and quality indicators |
-| Buzzer | Alert notifications |
-| Jumper wires & resistors | Connections |
+| Component                | Purpose                       |
+| ------------------------ | ----------------------------- |
+| ESP32 Dev Board          | Main microcontroller          |
+| DHT11                    | Temperature & humidity sensor |
+| MQ-135                   | Air quality sensor            |
+| 16x2 I2C LCD             | Display interface             |
+| LEDs (4x)                | Status and quality indicators |
+| Buzzer                   | Alert notifications           |
+| Jumper wires & resistors | Connections                   |
 
 ## 📡 Connection Modes
 
 ### Local WiFi Mode
+
 ```
 Your Device ──(same WiFi)──> ESP32
           <─────────────────>
          Response (Direct)
 ```
+
 - **Pros**: Ultra-fast, no internet needed, secure
 - **Cons**: Must be on same network as ESP32
 - **Best for**: Home/office use
 
 ### Cloud Proxy Mode
+
 ```
 Your Device ──(any internet)──> Vercel ──> ESP32
           <─────────────────────────────────>
           Response through cloud proxy
 ```
+
 - **Pros**: Works from anywhere, remote monitoring
 - **Cons**: Slightly slower, requires internet, proxy needed
 - **Best for**: Remote monitoring, multiple locations
 
 ### Auto Mode
+
 ```
 Try Local → Success? Use it! ✅
         └─> Failed? Switch to Cloud ☁️
 ```
+
 - **Pros**: Best of both worlds, automatic switching
 - **Cons**: Minimal latency overhead during switching
 - **Best for**: Unknown network conditions
@@ -160,6 +181,7 @@ Try Local → Success? Use it! ✅
 ## 🌐 API Endpoints
 
 ### Local Endpoints (on same WiFi)
+
 ```
 GET  http://192.168.4.1/api/status      - Get sensor data
 POST http://192.168.4.1/api/led/toggle  - Toggle LED
@@ -170,6 +192,7 @@ GET  http://192.168.4.1/api/info        - Get device info
 ```
 
 ### Cloud Proxy Endpoint
+
 ```
 GET/POST https://air-sentinel-taupe.vercel.app/api/esp32-proxy
   ?endpoint=/api/status
@@ -177,16 +200,19 @@ GET/POST https://air-sentinel-taupe.vercel.app/api/esp32-proxy
 ```
 
 ### Example API Call
+
 ```javascript
 // Local
-fetch('http://192.168.4.1/api/status')
-  .then(r => r.json())
-  .then(data => console.log(data));
+fetch("http://192.168.4.1/api/status")
+  .then((r) => r.json())
+  .then((data) => console.log(data));
 
 // Cloud
-fetch('https://air-sentinel-taupe.vercel.app/api/esp32-proxy?endpoint=/api/status&deviceIp=192.168.4.1')
-  .then(r => r.json())
-  .then(response => console.log(response.data));
+fetch(
+  "https://air-sentinel-taupe.vercel.app/api/esp32-proxy?endpoint=/api/status&deviceIp=192.168.4.1"
+)
+  .then((r) => r.json())
+  .then((response) => console.log(response.data));
 ```
 
 ## 🗂️ Project Structure
@@ -216,6 +242,7 @@ IT-ELEMSYS-IOT/
 ## 🔧 Configuration
 
 ### Default Settings
+
 ```javascript
 ESP32 WiFi SSID:    "AirSentinel"
 ESP32 WiFi Pass:    "1234567890"
@@ -225,9 +252,11 @@ Dashboard Refresh:  Every 3 seconds
 ```
 
 ### Customization
+
 Edit these values in the source files:
 
 **Arduino Code** (`ESP32_Code.ino`):
+
 ```cpp
 const char* ssid = "YourNetwork";
 const char* password = "YourPassword";
@@ -236,14 +265,16 @@ const char* password = "YourPassword";
 ```
 
 **Dashboard** (`script.js`):
+
 ```javascript
-CONFIG.DEFAULT_DEVICE_IP = '192.168.4.1';  // Change default IP
-state.maxHistoryPoints = 8;                 // Change chart size
+CONFIG.DEFAULT_DEVICE_IP = "192.168.4.1"; // Change default IP
+state.maxHistoryPoints = 8; // Change chart size
 ```
 
 ## 🐛 Troubleshooting
 
 ### Device Won't Connect
+
 1. Check ESP32 is powered on
 2. Verify WiFi credentials
 3. Confirm IP address (192.168.4.1)
@@ -251,12 +282,14 @@ state.maxHistoryPoints = 8;                 // Change chart size
 5. Check sensor connections
 
 ### Cloud Proxy Not Working
+
 1. Ensure Vercel app is deployed
 2. Verify device IP is correct
 3. Check internet connection
 4. Test with local mode first
 
 ### Sensor Errors
+
 - **DHT11 Error**: Check wiring on GPIO32
 - **MQ135 Error**: Verify wiring on GPIO35, wait 30 seconds warmup
 - **LCD Error**: Check I2C address (default 0x27), verify GPIO21/22
@@ -266,24 +299,29 @@ See [QUICK_REFERENCE.md](QUICK_REFERENCE.md) for more troubleshooting tips.
 ## 📊 Dashboard Features Explained
 
 ### Status Indicators
+
 - 🟢 **Green**: Connected and operational
 - 🟡 **Yellow**: Connecting or searching
 - 🔴 **Red**: Disconnected or error
 
 ### Air Quality Levels
+
 - **Green** (≤50 PPM): Excellent
 - **Yellow** (50-100 PPM): Moderate
 - **Orange** (100-200 PPM): Unhealthy
 - **Red** (>200 PPM): Hazardous
 
 ### AI Recommendations
+
 Real-time health tips based on:
+
 - Temperature ranges
 - Humidity levels
 - Air quality metrics
 - Environmental conditions
 
 ### Historical Charts
+
 - Temperature trends
 - Humidity patterns
 - Air quality history
@@ -292,12 +330,14 @@ Real-time health tips based on:
 ## 🔐 Security Considerations
 
 ### Current Implementation
+
 - ✅ CORS enabled for web access
 - ✅ No authentication required (local use)
 - ⚠️ WiFi password is default and weak
 - ⚠️ Cloud proxy accepts any device IP
 
 ### For Production Use
+
 - 🔒 Change WiFi password in Arduino code
 - 🔒 Implement API key authentication
 - 🔒 Add IP whitelist to cloud proxy
@@ -306,17 +346,18 @@ Real-time health tips based on:
 
 ## 📈 Performance Metrics
 
-| Metric | Local | Cloud |
-|--------|-------|-------|
+| Metric        | Local     | Cloud      |
+| ------------- | --------- | ---------- |
 | Response Time | 100-200ms | 500-1000ms |
-| Latency | Very Low | Low |
-| Bandwidth | Minimal | Minimal |
-| Reliability | Excellent | Very Good |
-| Setup Time | 2 minutes | 3 minutes |
+| Latency       | Very Low  | Low        |
+| Bandwidth     | Minimal   | Minimal    |
+| Reliability   | Excellent | Very Good  |
+| Setup Time    | 2 minutes | 3 minutes  |
 
 ## 🎓 Learning Outcomes
 
 This project demonstrates:
+
 - ✅ Embedded systems with ESP32
 - ✅ Sensor integration and data collection
 - ✅ IoT networking and connectivity
@@ -342,16 +383,20 @@ This project is provided as-is for educational purposes.
 ## 📞 Support & Contributions
 
 ### Getting Help
+
 1. Check [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed instructions
 2. Review [QUICK_REFERENCE.md](QUICK_REFERENCE.md) for troubleshooting
 3. Check serial monitor output for ESP32 errors
 4. Open browser console (F12) for JavaScript errors
 
 ### Contributing
+
 Feel free to fork, modify, and improve this project!
 
 ### Issues & Feedback
+
 If you encounter any issues:
+
 1. Check all documentation first
 2. Review troubleshooting guides
 3. Check GitHub issues
