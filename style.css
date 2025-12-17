@@ -1140,6 +1140,60 @@ body {
     border-radius: 0;
 }
 
+/* Flowise Chatbot Custom Styling */
+.flowise-chat-button {
+    background: linear-gradient(135deg, #00b4d8, #0077b6) !important;
+    border-radius: 50% !important;
+    box-shadow: 0 6px 20px rgba(0, 180, 216, 0.4) !important;
+    transition: all 0.3s ease !important;
+}
+
+.flowise-chat-button:hover {
+    transform: scale(1.1) !important;
+    box-shadow: 0 8px 25px rgba(0, 180, 216, 0.6) !important;
+}
+
+.flowise-chat-window {
+    border-radius: 16px !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
+    border: 2px solid #00b4d8 !important;
+}
+
+.flowise-chat-title {
+    background: linear-gradient(135deg, #00b4d8, #0077b6) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    border-radius: 14px 14px 0 0 !important;
+}
+
+.flowise-chat-footer {
+    border-top: 1px solid #e0e0e0 !important;
+    padding: 12px !important;
+    font-size: 12px !important;
+}
+
+.flowise-chat-bubble-bot {
+    background: #f0f7ff !important;
+    border-radius: 18px 18px 18px 4px !important;
+    border: 1px solid #e0f2ff !important;
+}
+
+.flowise-chat-bubble-user {
+    background: linear-gradient(135deg, #00b4d8, #0077b6) !important;
+    border-radius: 18px 18px 4px 18px !important;
+}
+
+.flowise-chat-input {
+    border-radius: 25px !important;
+    border: 1px solid #ddd !important;
+    padding: 12px 20px !important;
+}
+
+.flowise-chat-send-button {
+    background: #00b4d8 !important;
+    border-radius: 50% !important;
+}
+
 /* Animations */
 @keyframes pulse {
     0% { opacity: 1; }
@@ -1247,6 +1301,17 @@ body {
     .modal-content {
         padding: 20px;
     }
+    .flowise-chat-window {
+        width: 90vw !important;
+        max-width: 90vw !important;
+        height: 70vh !important;
+        max-height: 70vh !important;
+    }
+    
+    .flowise-chat-button {
+        bottom: 20px !important;
+        right: 20px !important;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1304,6 +1369,33 @@ body {
     
     .chatbot-container {
         height: 450px;
+    }
+    .flowise-chat-window {
+        width: 95vw !important;
+        height: 65vh !important;
+        max-height: 65vh !important;
+        right: 2.5vw !important;
+        bottom: 80px !important;
+    }
+    
+    .flowise-chat-button {
+        width: 56px !important;
+        height: 56px !important;
+        bottom: 16px !important;
+        right: 16px !important;
+    }
+}
+
+@media (max-width: 360px) {
+    .flowise-chat-window {
+        width: 98vw !important;
+        height: 60vh !important;
+        right: 1vw !important;
+    }
+    
+    .flowise-chat-button {
+        width: 52px !important;
+        height: 52px !important;
     }
 }
 

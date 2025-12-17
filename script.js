@@ -418,16 +418,45 @@ function updateChart(chartId, data, type) {
 }
 
 // ============================================
-// Location Services
+// Enhanced Location Services
 // ============================================
 function getLocation() {
     if (!navigator.geolocation) {
+        console.warn("Geolocation not supported by this browser.");
         elements.locationText.textContent = "Geolocation not supported";
+        // Fallback to IP-based location
+        getLocationByIP();
         return;
     }
+
+    // Check if we're in a secure context (HTTPS)
+    if (window.isSecureContext) {
+        // If secure, try high-accuracy GPS first
+        requestUserLocation();
+    } else {
+        // If not secure (HTTP), inform the user and use IP fallback
+        console.warn("Geolocation requires HTTPS. This page is served over HTTP.");
+        elements.locationText.textContent = "Using network location (HTTPS required for GPS)";
+        
+        // You can show a helpful message to the user
+        showNotification("For precise GPS location, please access this site via HTTPS (e.g., through our cloud server). Using estimated network location.", "info");
+        
+        // Fallback to IP-based geolocation
+        getLocationByIP();
+    }
+}
+
+// Request location with proper error handling
+function requestUserLocation() {
+    const options = {
+        enableHighAccuracy: true, // Request better accuracy[citation:4]
+        timeout: 10000, // 10 second timeout[citation:4]
+        maximumAge: 30000 // Cache location for 30 seconds
+    };
     
     navigator.geolocation.getCurrentPosition(
         (position) => {
+            // Success callback
             state.userLocation = {
                 latitude: position.coords.latitude,
                 longitude: position.coords.longitude,
@@ -438,20 +467,114 @@ function getLocation() {
             state.locationPermission = true;
             updateLocationDisplay();
             saveLocationToFirebase();
-            
             showNotification("Location updated successfully", "success");
+            
+            // Now fetch weather/air quality data based on coordinates
+            fetchEnvironmentalData(position.coords.latitude, position.coords.longitude);
         },
         (error) => {
+            // Enhanced error handling[citation:2][citation:4]
             console.error("Geolocation error:", error);
-            handleLocationError(error);
+            
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    elements.locationText.textContent = "Location permission denied";
+                    showNotification("Please enable location permissions to get local weather data.", "warning");
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    elements.locationText.textContent = "Location unavailable";
+                    showNotification("Could not get location. Using estimated location.", "info");
+                    break;
+                case error.TIMEOUT:
+                    elements.locationText.textContent = "Location request timed out";
+                    showNotification("Location request took too long.", "info");
+                    break;
+                default:
+                    elements.locationText.textContent = "Location error occurred";
+                    break;
+            }
+            
+            // Always fall back to IP-based location
+            getLocationByIP();
         },
-        {
-            enableHighAccuracy: true,
-            timeout: 5000,
-            maximumAge: 30000
-        }
+        options
     );
 }
+
+// Fallback: Get approximate location via IP
+function getLocationByIP() {
+    // Using a free IP geolocation service (replace with your own key)
+    fetch('https://ipapi.co/json/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.latitude && data.longitude) {
+                state.userLocation = {
+                    latitude: data.latitude,
+                    longitude: data.longitude,
+                    accuracy: 50000, // ~50km accuracy for IP-based
+                    timestamp: new Date(),
+                    city: data.city,
+                    country: data.country_name
+                };
+                updateLocationDisplay();
+                console.log("Estimated location via IP:", data.city, data.country);
+                
+                // Fetch weather/air quality for this estimated location
+                fetchEnvironmentalData(data.latitude, data.longitude);
+            }
+        })
+        .catch(error => {
+            console.error("IP geolocation failed:", error);
+            elements.locationText.textContent = "Location services unavailable";
+        });
+}
+
+// Fetch temperature and air quality for coordinates
+function fetchEnvironmentalData(lat, lon) {
+    // Example using OpenWeatherMap API (you'll need an API key)
+    const apiKey = '6556f1a67f4b57ec85cc989de336a187'; // Get from https://openweathermap.org/api
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.main && data.weather) {
+                // Update your UI with external environmental data
+                console.log("Local temperature:", data.main.temp, "°C");
+                console.log("Weather:", data.weather[0].description);
+                
+                // You can create a new display element for this data
+                updateExternalEnvironmentDisplay(data);
+            }
+        })
+        .catch(error => console.error("Weather API error:", error));
+    
+    // For air quality, you could use another API like OpenAQ
+    // const aqUrl = `https://api.openaq.org/v2/latest?coordinates=${lat},${lon}`;
+}
+
+function updateExternalEnvironmentDisplay(weatherData) {
+    // Create or update an element to show external data
+    const extDataElement = document.getElementById('externalEnvironment') || createExternalDataElement();
+    
+    extDataElement.innerHTML = `
+        <div class="external-data">
+            <h4><i class="fas fa-cloud-sun"></i> Local Environment</h4>
+            <p><strong>Outside Temp:</strong> ${weatherData.main.temp}°C</p>
+            <p><strong>Conditions:</strong> ${weatherData.weather[0].description}</p>
+            <p><strong>Humidity:</strong> ${weatherData.main.humidity}%</p>
+        </div>
+    `;
+}
+
+function createExternalDataElement() {
+    const div = document.createElement('div');
+    div.id = 'externalEnvironment';
+    // Insert after the location section
+    document.querySelector('.location-section').after(div);
+    return div;
+}
+
 
 function updateLocation() {
     elements.locationText.textContent = "Updating location...";
@@ -1026,8 +1149,48 @@ function updateLastUpdateTime() {
 }
 
 // ============================================
+// Flowise Chatbot Management
+// ============================================
+function checkAndOpenChatbot() {
+    // Check if Flowise button exists and click it to open
+    const flowiseButton = document.querySelector('.flowise-chat-button');
+    if (flowiseButton) {
+        setTimeout(() => {
+            flowiseButton.click();
+            console.log('✅ Flowise chatbot opened automatically');
+            
+            // Send sensor data context
+            if (window.currentSensorData) {
+                const sensorData = window.currentSensorData;
+                console.log('📊 Sensor data available for chatbot:', sensorData);
+                
+                // Store in global variable for chatbot context
+                window.sensorDataContext = sensorData;
+            }
+        }, 2500);
+    }
+}
+
+
+function showAssistancePopupChatbot() {
+    hideAssistancePopup();
+    
+    // Click the Flowise button to open the chatbot
+    const flowiseButton = document.querySelector('.flowise-chat-button');
+    if (flowiseButton) {
+        flowiseButton.click();
+        showNotification('AI Assistant opened! Ask me anything about air quality.', 'success');
+    } else {
+        showNotification('AI Assistant is loading... Please wait.', 'info');
+    }
+}
+
+
+
+// ============================================
 // Initialization
 // ============================================
+// Update the initialization function
 function initialize() {
     console.log('Initializing AirSentinel Firebase Dashboard...');
     
@@ -1066,6 +1229,9 @@ function initialize() {
     
     // Check initial connection
     setTimeout(() => testConnection(), 1000);
+    
+    // Setup Flowise chatbot auto-open
+    setTimeout(checkAndOpenChatbot, 3000);
     
     // Add click outside listener for modals
     document.addEventListener('click', (event) => {
