@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AirSentinel - Air Quality Monitor</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <!-- Connection Status Overlay -->
+    <div class="connection-overlay" id="connectionOverlay">
+        <div class="connection-icon">⚠️</div>
+        <div class="connection-message">Device Is Disconnected</div>
+        <div class="connection-details">
+            Your phone is no longer connected to the AirSentinel device. 
+            Please reconnect to the WiFi network "AirSentinel" to continue monitoring.
+        </div>
+        <button class="reconnect-button" onclick="checkConnection()">
+            <span>🔗</span> Try to Reconnect
+        </button>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">A</div>
+                <div class="logo-text">AirSentinel</div>
+            </div>
+        </div>
+        
+        <!-- Main Dashboard -->
+        <div class="dashboard">
+            <div class="card temperature-card">
+                <div class="card-title">
+                    <span>🌡️</span> Temperature
+                </div>
+                <div class="card-content">
+                    <span id="temperature">--</span>
+                    <span class="card-unit">°C</span>
+                </div>
+                <div class="reading-time" id="tempTime"></div>
+            </div>
+            
+            <div class="card humidity-card">
+                <div class="card-title">
+                    <span>💧</span> Humidity
+                </div>
+                <div class="card-content">
+                    <span id="humidity">--</span>
+                    <span class="card-unit">%</span>
+                </div>
+                <div class="reading-time" id="humTime"></div>
+            </div>
+            
+            <div class="card airquality-card">
+                <div class="card-title">
+                    <span>🌫️</span> Air Quality
+                </div>
+                <div class="card-content">
+                    <span id="airQuality">--</span>
+                    <span class="card-unit">PPM</span>
+                </div>
+                <div class="aqi-indicator">
+                    <div class="aqi-dot" id="aqiDot"></div>
+                    <span class="aqi-label" id="aqiLabel">Good</span>
+                </div>
+            </div>
+            
+            <div class="card co2-card">
+                <div class="card-title">
+                    <span>☁️</span> CO₂ Level
+                </div>
+                <div class="card-content">
+                    <span id="co2Level">--</span>
+                    <span class="card-unit">PPM</span>
+                </div>
+                <div class="reading-time" id="co2Time"></div>
+            </div>
+        </div>
+        
+        <!-- LCD Control Section -->
+        <div class="lcd-controls">
+            <div class="lcd-title">
+                <span>📺</span> LCD Display Control
+            </div>
+            
+            <div class="lcd-buttons">
+                <button class="lcd-btn" onclick="sendLCDCommand('welcome')">
+                    <span>🏠</span> Welcome Screen
+                </button>
+                
+                <button class="lcd-btn" onclick="sendLCDCommand('temperature')">
+                    <span>🌡️</span> Temperature
+                </button>
+                
+                <button class="lcd-btn" onclick="sendLCDCommand('humidity')">
+                    <span>💧</span> Humidity
+                </button>
+                
+                <button class="lcd-btn" onclick="sendLCDCommand('airquality')">
+                    <span>🌫️</span> Air Quality
+                </button>
+                
+                <button class="lcd-btn" onclick="sendLCDCommand('co2')">
+                    <span>☁️</span> CO₂ Level
+                </button>
+                
+                <button class="lcd-btn" onclick="sendLCDCommand('alldata')">
+                    <span>📊</span> All Data
+                </button>
+            </div>
+            
+            <div class="lcd-info">
+                Current LCD Display: <strong id="currentLCDDisplay">Welcome Screen</strong>
+            </div>
+        </div>
+        
+        <!-- AI Health Recommendations -->
+        <div class="ai-card">
+            <div class="ai-header">
+                <div class="ai-icon">🤖</div>
+                <div class="ai-title">AI Health Assistant</div>
+            </div>
+            <div class="ai-recommendations" id="aiRecommendations">
+                <div class="ai-message">
+                    <div class="ai-message-icon">💡</div>
+                    <div class="ai-message-content">
+                        <div class="ai-message-title">Waiting for data...</div>
+                        <div class="ai-message-text">Connect sensors to get personalized health recommendations</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Air Quality Gauge -->
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="card-title">
+                <span>📊</span> Air Quality Index
+            </div>
+            <div class="gauge-container">
+                <div class="gauge">
+                    <div class="gauge-marker" id="gaugeMarker"></div>
+                </div>
+                <div class="gauge-labels">
+                    <span>Good</span>
+                    <span>Moderate</span>
+                    <span>Unhealthy</span>
+                    <span>Hazardous</span>
+                </div>
+            </div>
+            <div class="air-quality-info">
+                <div class="air-quality-level">
+                    <span class="level-good">0-50 PPM: Excellent</span>
+                    <span id="currentLevel">--</span>
+                </div>
+                <div class="air-quality-level">
+                    <span class="level-moderate">51-100 PPM: Moderate</span>
+                </div>
+                <div class="air-quality-level">
+                    <span class="level-unhealthy">101-200 PPM: Unhealthy</span>
+                </div>
+                <div class="air-quality-level">
+                    <span class="level-hazardous">201+ PPM: Hazardous</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts Section -->
+        <div class="charts-container">
+            <div class="chart-header">
+                <div class="chart-title">Sensor History</div>
+                <div class="chart-tabs">
+                    <div class="chart-tab active" onclick="switchChart('temperature')">Temperature</div>
+                    <div class="chart-tab" onclick="switchChart('humidity')">Humidity</div>
+                    <div class="chart-tab" onclick="switchChart('airquality')">Air Quality</div>
+                </div>
+            </div>
+            
+            <div class="chart-wrapper" id="temperatureChart" style="display: block;">
+                <div class="chart-grid" id="tempGrid"></div>
+                <div class="chart-bars" id="temperatureBars"></div>
+                <div class="chart-axis"></div>
+            </div>
+            
+            <div class="chart-wrapper" id="humidityChart" style="display: none;">
+                <div class="chart-grid" id="humGrid"></div>
+                <div class="chart-bars" id="humidityBars"></div>
+                <div class="chart-axis"></div>
+            </div>
+            
+            <div class="chart-wrapper" id="airqualityChart" style="display: none;">
+                <div class="chart-grid" id="airGrid"></div>
+                <div class="chart-bars" id="airqualityBars"></div>
+                <div class="chart-axis"></div>
+            </div>
+        </div>
+        
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-group">
+                <div class="led-status">
+                    <div class="led-indicator" id="ledIndicator"></div>
+                    <span>LED Status: <strong id="ledStatusText">OFF</strong></span>
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="toggleLED()">
+                        <span>💡</span> LED
+                    </button>
+                    
+                    <button class="btn btn-success" onclick="refreshSensors()">
+                        <span>🔄</span> Refresh
+                    </button>
+                    
+                    <button class="btn btn-warning" onclick="calibrateMQ135()">
+                        <span>⚙️</span> Calibrate (30s)
+                    </button>
+                    
+                    <button class="btn btn-danger" onclick="location.reload()">
+                        <span>📱</span> Reload
+                    </button>
+                </div>
+            </div>
+            
+            <div class="status-bar">
+                <div class="status-item">
+                    <span class="pulse">●</span>
+                    <span>ESP32 | DHT11:GPIO32 | MQ-135:GPIO35</span>
+                </div>
+                <div class="status-item">
+                    <span id="readingTime">Updated: --:--:--</span>
+                </div>
+                <div class="status-item">
+                    <span id="sensorStatus">All Sensors OK</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- System Info -->
+        <div class="dashboard">
+            <div class="card">
+                <div class="card-title">
+                    <span>⏱️</span> Uptime
+                </div>
+                <div class="card-content" id="uptime">00:00:00</div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">
+                    <span>💾</span> Memory
+                </div>
+                <div class="card-content" id="freeHeap">0 KB</div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">
+                    <span>📡</span> WiFi
+                </div>
+                <div class="card-content" id="wifiRSSI">- dBm</div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">
+                    <span>🔋</span> Analog
+                </div>
+                <div class="card-content" id="analogRaw">0</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
