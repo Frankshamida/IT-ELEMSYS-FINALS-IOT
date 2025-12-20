@@ -32,7 +32,7 @@ const database = firebase.database()
 // AI Assistant Configuration
 // ============================================
 const AI_ASSISTANT_CONFIG = {
-  apiKey: "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",
+  apiKey: "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",
   apiUrl: "https://openrouter.ai/api/v1/chat/completions",
   temperature: 0.6,
   model: "deepseek/deepseek-r1-0528:free",
