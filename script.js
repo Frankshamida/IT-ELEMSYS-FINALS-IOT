@@ -32,12 +32,15 @@ const database = firebase.database()
 // AI Assistant Configuration
 // ============================================
 const AI_ASSISTANT_CONFIG = {
-  apiKey: "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",
-  apiUrl: "https://openrouter.ai/api/v1/chat/completions",
+  apiKey: "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",
+  apiUrl: "https://api.groq.com/openai/v1/chat/completions",  // Changed from OpenRouter to Groq
   temperature: 0.6,
-  model: "deepseek/deepseek-r1-0528:free",
-  siteUrl: window.location.origin,
-  siteName: "AirSentinel Health Monitor",
+  model: "llama-3.3-70b-versatile",  // Changed model to Groq compatible model
+  // model alternatives you can use with Groq:
+  // "llama-3.1-8b-instant"
+  // "llama-3.1-70b-versatile"
+  // "mixtral-8x7b-32768"
+  // "gemma2-9b-it"
 }
 
 // ============================================
@@ -1382,7 +1385,7 @@ async function analyzeHealthConditions() {
     `
 
   try {
-    console.log("[v0] Calling OpenRouter API with sensor data:", currentSensorData)
+    console.log("[v0] Calling Groq API with sensor data:", currentSensorData)
 
     const prompt = `You are a health expert analyzing indoor environmental conditions. Based on the following sensor readings, provide detailed health recommendations:
 
@@ -1391,20 +1394,21 @@ Humidity: ${currentSensorData.humidity !== null ? currentSensorData.humidity + "
 Air Quality (VOC): ${currentSensorData.airQuality !== null ? currentSensorData.airQuality + " PPM" : "N/A"}
 CO₂ Level: ${currentSensorData.co2 !== null ? currentSensorData.co2 + " PPM" : "N/A"}
 
-Please provide:
-1. Overall Health Risk Assessment (Low, Moderate, High, Critical)
-2. Specific health concerns and potential diseases related to these conditions
-3. Immediate action items (to-dos) the user should take
-4. Long-term recommendations
-
-Format your response clearly with sections and bullet points.`
+IMPORTANT: Please format your response with:
+- Use **bold** for section titles
+- Use bullet points (*) for lists
+- Highlight temperature values in bold when mentioning them (like **31.2°C**)
+- Highlight air quality values in bold when mentioning them (like **5.88 PPM**)
+- Structure your response with these sections:
+  1. **Overall Health Risk Assessment** (Low, Moderate, High, Critical)
+  2. **Specific Health Concerns**
+  3. **Immediate Action Items**
+  4. **Long-term Recommendations**`
 
     const response = await fetch(AI_ASSISTANT_CONFIG.apiUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${AI_ASSISTANT_CONFIG.apiKey}`,
-        "HTTP-Referer": AI_ASSISTANT_CONFIG.siteUrl,
-        "X-Title": AI_ASSISTANT_CONFIG.siteName,
+        "Authorization": `Bearer ${AI_ASSISTANT_CONFIG.apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -1416,6 +1420,7 @@ Format your response clearly with sections and bullet points.`
           },
         ],
         temperature: AI_ASSISTANT_CONFIG.temperature,
+        max_tokens: 1000,
       }),
     })
 
@@ -1424,7 +1429,7 @@ Format your response clearly with sections and bullet points.`
     if (!response.ok) {
       const errorText = await response.text()
       console.error("[v0] API error:", errorText)
-      throw new Error(`API request failed: ${response.status} - ${errorText}`)
+      throw new Error(`API request failed: ${response.status}`)
     }
 
     const result = await response.json()
@@ -1454,6 +1459,9 @@ function displayAIResponse(response) {
 
   // Determine alert level based on sensor readings
   let alertClass = "info"
+  let alertIcon = "fa-info-circle"
+  let alertTitle = "Health Analysis"
+  
   if (
     currentSensorData.temperature > 30 ||
     currentSensorData.temperature < 15 ||
@@ -1461,24 +1469,83 @@ function displayAIResponse(response) {
     currentSensorData.co2 > 1000
   ) {
     alertClass = "danger"
-  } else if (currentSensorData.temperature > 27 || currentSensorData.airQuality > 100 || currentSensorData.co2 > 800) {
+    alertIcon = "fa-exclamation-triangle"
+    alertTitle = "⚠️ Health Alert - Critical"
+  } else if (
+    currentSensorData.temperature > 27 ||
+    currentSensorData.airQuality > 100 ||
+    currentSensorData.co2 > 800
+  ) {
     alertClass = "warning"
+    alertIcon = "fa-exclamation-circle"
+    alertTitle = "⚠️ Health Warning"
   }
 
-  // Format the response with better styling
-  const formattedResponse = response
-    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\n\n/g, "</p><p>")
-    .replace(/\n/g, "<br>")
+  // Process the response to add clean formatting
+  let formattedResponse = response
+  
+  // Replace markdown headers with clean HTML
+  formattedResponse = formattedResponse.replace(/## (.*?)(?:\n|$)/g, '<div class="section-title">$1</div>')
+  
+  // Replace bold text
+  formattedResponse = formattedResponse.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+  
+  // Replace bullet points with proper HTML
+  formattedResponse = formattedResponse.replace(/\n\*/g, '\n<li>')
+  formattedResponse = formattedResponse.replace(/\n• /g, '\n<li>')
+  formattedResponse = formattedResponse.replace(/\n- /g, '\n<li>')
+  
+  // Wrap lists in ul tags
+  formattedResponse = formattedResponse.replace(/(<li>.*?<\/li>(?:\n|$))+/g, '<ul class="ai-list">$&</ul>')
+  
+  // Close li tags and add closing ul
+  formattedResponse = formattedResponse.replace(/<li>(.*?)(?:\n|$)/g, '<li>$1</li>')
+  
+  // Convert line breaks to paragraphs
+  const sections = formattedResponse.split('\n\n')
+  let finalHTML = ''
+  
+  sections.forEach(section => {
+    if (section.trim()) {
+      // Check if this is a list
+      if (section.includes('<li>')) {
+        finalHTML += section
+      } else {
+        // It's a regular paragraph
+        finalHTML += '<p>' + section + '</p>'
+      }
+    }
+  })
+
+  // Add current sensor values at the top
+  const sensorValuesHTML = `
+    <div class="sensor-summary">
+      <div class="sensor-row">
+        <span class="sensor-label">Temperature:</span>
+        <span class="sensor-value ${currentSensorData.temperature > 30 || currentSensorData.temperature < 15 ? 'danger' : currentSensorData.temperature > 27 || currentSensorData.temperature < 18 ? 'warning' : ''}">
+          ${currentSensorData.temperature !== null ? currentSensorData.temperature.toFixed(1) + '°C' : 'N/A'}
+        </span>
+      </div>
+      <div class="sensor-row">
+        <span class="sensor-label">Air Quality:</span>
+        <span class="sensor-value ${currentSensorData.airQuality > 150 ? 'danger' : currentSensorData.airQuality > 100 ? 'warning' : ''}">
+          ${currentSensorData.airQuality !== null ? currentSensorData.airQuality.toFixed(1) + ' PPM' : 'N/A'}
+        </span>
+      </div>
+    </div>
+  `
 
   responseContainer.innerHTML = `
         <div class="ai-message bot-message">
             <div class="message-avatar"><i class="fas fa-heartbeat"></i></div>
             <div class="message-content">
                 <div class="health-alert ${alertClass}">
-                    <strong><i class="fas fa-info-circle"></i> Health Analysis</strong>
+                    <strong><i class="fas ${alertIcon}"></i> ${alertTitle}</strong>
                 </div>
-                <p>${formattedResponse}</p>
+                ${sensorValuesHTML}
+                <div class="ai-analysis">
+                  ${finalHTML}
+                </div>
             </div>
         </div>
     `

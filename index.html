@@ -515,6 +515,74 @@
             </div>
         </div>
         
+        <!-- AI Health Dashboard Section -->
+        <div class="ai-health-dashboard" id="aiHealthDashboard" style="display: none;">
+            <div class="ai-health-header">
+                <div class="ai-health-title">
+                    <i class="fas fa-heartbeat"></i>
+                    <h2>AI Health Analysis</h2>
+                </div>
+                <button class="btn btn-small" onclick="refreshAIAnalysis()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            
+            <!-- Current Conditions Summary -->
+            <div class="conditions-summary">
+                <div class="summary-card">
+                    <div class="summary-icon temp-icon">
+                        <i class="fas fa-thermometer-half"></i>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-label">Temperature</div>
+                        <div class="summary-value" id="aiTempValue">--°C</div>
+                        <div class="summary-status" id="aiTempStatus">Checking...</div>
+                    </div>
+                </div>
+                
+                <div class="summary-card">
+                    <div class="summary-icon humidity-icon">
+                        <i class="fas fa-tint"></i>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-label">Humidity</div>
+                        <div class="summary-value" id="aiHumValue">--%</div>
+                        <div class="summary-status" id="aiHumStatus">Checking...</div>
+                    </div>
+                </div>
+                
+                <div class="summary-card">
+                    <div class="summary-icon air-icon">
+                        <i class="fas fa-wind"></i>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-label">Air Quality</div>
+                        <div class="summary-value" id="aiAirValue">-- PPM</div>
+                        <div class="summary-status" id="aiAirStatus">Checking...</div>
+                    </div>
+                </div>
+                
+                <div class="summary-card">
+                    <div class="summary-icon co2-icon">
+                        <i class="fas fa-cloud"></i>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-label">CO₂ Level</div>
+                        <div class="summary-value" id="aiCo2Value">-- PPM</div>
+                        <div class="summary-status" id="aiCo2Status">Checking...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- AI Recommendations -->
+            <div class="ai-recommendations" id="aiRecommendations">
+                <div class="recommendations-loading">
+                    <i class="fas fa-robot fa-2x"></i>
+                    <p>AI is analyzing your environmental conditions...</p>
+                </div>
+            </div>
+        </div>
+        
         <!-- Air Quality Gauge -->
         <div class="section">
             <div class="section-header">
