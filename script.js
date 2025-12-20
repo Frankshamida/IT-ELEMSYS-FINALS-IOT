@@ -1126,6 +1126,170 @@ async function checkLocalConnection() {
   }
 }
 
+// ============================================
+// Sensor Error Detection & Handling
+// ============================================
+let sensorErrors = {
+  mq135: false,
+  dht11: false
+}
+
+let sensorErrorCheckInterval = null
+
+// Check if sensors are responding
+function checkSensorStatus() {
+  const temp = parseFloat(document.getElementById('temperature')?.textContent)
+  const humidity = parseFloat(document.getElementById('humidity')?.textContent)
+  const airQuality = parseFloat(document.getElementById('airQuality')?.textContent)
+
+  // Determine sensor status
+  sensorErrors.dht11 = isNaN(temp) || isNaN(humidity) || temp === 0 && humidity === 0
+  sensorErrors.mq135 = isNaN(airQuality) || airQuality === 0
+
+  // Show error modal if any sensor is disconnected
+  if (sensorErrors.dht11 || sensorErrors.mq135) {
+    showSensorErrorModal()
+  } else {
+    hideSensorErrorModal()
+    if (sensorErrorCheckInterval) {
+      clearInterval(sensorErrorCheckInterval)
+      sensorErrorCheckInterval = null
+    }
+  }
+}
+
+function showSensorErrorModal() {
+  const modal = document.getElementById('sensorErrorModal')
+  if (!modal) return
+
+  modal.classList.add('active')
+
+  // Update sensor list
+  const sensorList = document.getElementById('sensorsErrorList')
+  sensorList.innerHTML = ''
+
+  if (sensorErrors.dht11) {
+    const item = document.createElement('div')
+    item.className = 'sensor-error-item'
+    item.innerHTML = `
+      <i class="fas fa-exclamation-circle"></i>
+      <strong>DHT11 Sensor</strong>
+      <span class="error-type">Temperature & Humidity</span>
+    `
+    sensorList.appendChild(item)
+  }
+
+  if (sensorErrors.mq135) {
+    const item = document.createElement('div')
+    item.className = 'sensor-error-item'
+    item.innerHTML = `
+      <i class="fas fa-exclamation-circle"></i>
+      <strong>MQ135 Sensor</strong>
+      <span class="error-type">Air Quality (VOC)</span>
+    `
+    sensorList.appendChild(item)
+  }
+
+  // Update status box
+  const statusText = document.getElementById('errorStatusText')
+  if (statusText) {
+    const errorCount = Object.values(sensorErrors).filter(Boolean).length
+    statusText.textContent = `${errorCount} sensor(s) not responding...`
+  }
+
+  // Disable critical functions
+  disableCriticalFunctions()
+
+  // Start periodic check
+  if (!sensorErrorCheckInterval) {
+    sensorErrorCheckInterval = setInterval(() => {
+      checkSensorStatus()
+    }, 3000)
+  }
+}
+
+function hideSensorErrorModal() {
+  const modal = document.getElementById('sensorErrorModal')
+  if (modal) {
+    modal.classList.remove('active')
+  }
+  enableCriticalFunctions()
+}
+
+function disableCriticalFunctions() {
+  // Disable control buttons
+  const controlButtons = document.querySelectorAll('[onclick*="setLCDMode"], [onclick*="toggleLED"], [onclick*="calibrateSensor"]')
+  controlButtons.forEach(btn => {
+    btn.disabled = true
+    btn.style.opacity = '0.5'
+    btn.style.cursor = 'not-allowed'
+    btn.title = 'Disabled - Sensors not responding'
+  })
+
+  // Add warning banner to main section
+  const mainSection = document.querySelector('.container')
+  if (mainSection && !document.getElementById('sensorWarningBanner')) {
+    const banner = document.createElement('div')
+    banner.id = 'sensorWarningBanner'
+    banner.style.cssText = `
+      background: linear-gradient(135deg, #e74c3c, #c0392b);
+      color: white;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 600;
+      animation: slideInDown 0.3s ease-out;
+    `
+    banner.innerHTML = `
+      <i class="fas fa-exclamation-triangle" style="font-size: 20px;"></i>
+      <span>⚠️ Critical: Sensors are not responding. Device functionality is limited.</span>
+    `
+    mainSection.insertBefore(banner, mainSection.firstChild)
+  }
+}
+
+function enableCriticalFunctions() {
+  // Enable control buttons
+  const controlButtons = document.querySelectorAll('[onclick*="setLCDMode"], [onclick*="toggleLED"], [onclick*="calibrateSensor"]')
+  controlButtons.forEach(btn => {
+    btn.disabled = false
+    btn.style.opacity = '1'
+    btn.style.cursor = 'pointer'
+    btn.title = ''
+  })
+
+  // Remove warning banner
+  const banner = document.getElementById('sensorWarningBanner')
+  if (banner) {
+    banner.remove()
+  }
+}
+
+function retrySensorCheck() {
+  const statusText = document.getElementById('errorStatusText')
+  if (statusText) {
+    statusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Retrying sensor check...'
+  }
+
+  setTimeout(() => {
+    checkSensorStatus()
+    if (statusText) {
+      const allGood = !sensorErrors.dht11 && !sensorErrors.mq135
+      statusText.textContent = allGood ? '✓ All sensors responding' : 'Sensors still not responding'
+    }
+  }, 2000)
+}
+
+function calibrateSensorFromError() {
+  calibrateSensor()
+  setTimeout(() => {
+    checkSensorStatus()
+  }, 35000)
+}
+
 function checkConnection() {
   testConnection()
 
@@ -1600,6 +1764,10 @@ function initialize() {
   // Setup Flowise chatbot auto-open
   setTimeout(checkAndOpenChatbot, 3000)
 
+  // Start sensor error monitoring
+  setTimeout(() => checkSensorStatus(), 2000)
+  setInterval(checkSensorStatus, 5000)
+
   // Add click outside listener for modals
   document.addEventListener("click", (event) => {
     if (event.target.classList.contains("modal")) {
@@ -1618,6 +1786,7 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     hideSetupModal()
     hideDeviceSettingsModal()
+    hideSensorErrorModal()
     hideTemperatureModal()
     hideHumidityModal()
     hideAirQualityModal()
@@ -1652,6 +1821,11 @@ window.updateConnectionMode = updateConnectionMode
 window.testConnection = testConnection
 window.checkConnection = checkConnection
 window.updateLocation = updateLocation
+window.showSensorErrorModal = showSensorErrorModal
+window.hideSensorErrorModal = hideSensorErrorModal
+window.checkSensorStatus = checkSensorStatus
+window.retrySensorCheck = retrySensorCheck
+window.calibrateSensorFromError = calibrateSensorFromError
 window.showTemperatureModal = showTemperatureModal
 window.hideTemperatureModal = hideTemperatureModal
 window.showHumidityModal = showHumidityModal

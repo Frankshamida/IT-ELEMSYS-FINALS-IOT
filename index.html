@@ -88,6 +88,60 @@
         </div>
     </div>
 
+    <!-- Sensor Error Modal -->
+    <div id="sensorErrorModal" class="modal">
+        <div class="modal-content sensor-error-modal">
+            <div class="error-header">
+                <div class="error-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h2>⚠️ Sensor Error Detected</h2>
+            </div>
+            
+            <div class="error-content">
+                <p class="error-message">The following sensors are not responding:</p>
+                <div class="sensors-error-list" id="sensorsErrorList">
+                    <!-- Dynamically populated -->
+                </div>
+                
+                <div class="error-details">
+                    <h3>What to do:</h3>
+                    <ol>
+                        <li><strong>Check connections:</strong> Verify all sensor cables are properly connected</li>
+                        <li><strong>Power cycle:</strong> Unplug the device for 10 seconds, then reconnect</li>
+                        <li><strong>Inspect sensors:</strong> Look for loose pins or physical damage</li>
+                        <li><strong>Calibrate:</strong> Run sensor calibration after reconnecting</li>
+                    </ol>
+                </div>
+                
+                <div class="error-status">
+                    <h3>Status:</h3>
+                    <div class="status-box" id="errorStatusBox">
+                        <i class="fas fa-circle" style="color: #e74c3c;"></i>
+                        <span id="errorStatusText">Waiting for sensors...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="error-actions">
+                <button class="btn btn-primary" onclick="retrySensorCheck()">
+                    <i class="fas fa-redo"></i> Retry Sensor Check
+                </button>
+                <button class="btn btn-warning" onclick="calibrateSensorFromError()">
+                    <i class="fas fa-cog"></i> Calibrate Sensors
+                </button>
+                <button class="btn btn-secondary" onclick="hideSensorErrorModal()">
+                    <i class="fas fa-times"></i> Dismiss (Proceed with caution)
+                </button>
+            </div>
+            
+            <div class="error-info-box">
+                <i class="fas fa-info-circle"></i>
+                <p><strong>Important:</strong> Data readings will be incomplete or inaccurate until all sensors are reconnected. Critical functions like device control are disabled.</p>
+            </div>
+        </div>
+    </div>
+
     <!-- Device Settings Modal -->
     <div id="deviceSettingsModal" class="modal">
         <div class="modal-content settings-modal">
