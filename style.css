@@ -1234,95 +1234,244 @@ body {
     animation: spin 1s linear infinite;
 }
 
-/* Responsive Design */
+/* Responsive Design - Optimized for All Mobile Devices */
+@media (max-width: 1024px) {
+    .container {
+        padding: 14px;
+    }
+    
+    .dashboard {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+    }
+    
+    .controls-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 @media (max-width: 768px) {
+    /* Base adjustments */
     .container {
         padding: 12px;
     }
     
+    body {
+        font-size: 15px;
+    }
+    
+    /* Header responsive */
     .header {
         flex-direction: column;
-        gap: 16px;
+        gap: 12px;
         text-align: center;
-        padding: 16px;
+        padding: 14px;
     }
     
     .logo-section {
         flex-direction: column;
-        gap: 16px;
+        gap: 12px;
+        width: 100%;
     }
     
     .connection-indicator {
         max-width: 100%;
+        width: 100%;
+        justify-content: center;
     }
     
+    .header-actions {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    /* Dashboard responsive */
     .dashboard {
         grid-template-columns: 1fr;
-        gap: 16px;
+        gap: 14px;
+    }
+    
+    .card {
+        padding: 16px;
     }
     
     .card-value {
         font-size: 36px;
     }
     
+    .card-unit {
+        font-size: 16px;
+    }
+    
+    /* Location section */
+    .location-section {
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px 14px;
+    }
+    
+    /* Sections */
+    .section {
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+    
+    .section-header {
+        margin-bottom: 16px;
+    }
+    
+    /* LCD buttons responsive */
     .lcd-buttons {
         grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
     }
     
+    .lcd-btn {
+        padding: 12px;
+        font-size: 13px;
+    }
+    
+    /* Controls grid */
     .controls-grid {
         grid-template-columns: 1fr;
+        gap: 16px;
     }
     
+    .control-card {
+        padding: 16px;
+    }
+    
+    /* Status grid */
     .status-grid {
         grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
     }
     
+    .status-item {
+        padding: 12px;
+        gap: 10px;
+    }
+    
+    .status-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+    }
+    
+    .status-value {
+        font-size: 16px;
+    }
+    
+    /* Footer responsive */
     .footer-content {
         flex-direction: column;
         text-align: center;
-        gap: 16px;
+        gap: 14px;
     }
     
     .footer-stats {
         flex-direction: column;
-        gap: 12px;
+        gap: 10px;
+        width: 100%;
     }
     
+    /* Chart tabs */
+    .chart-tabs {
+        width: 100%;
+        flex-direction: column;
+    }
+    
+    .chart-tab {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    /* Buttons */
+    .btn {
+        min-height: 40px;
+        padding: 10px 20px;
+    }
+    
+    .btn-control {
+        width: 100%;
+        margin-top: 8px;
+    }
+    
+    /* Modals */
+    .modal-content {
+        padding: 20px;
+        max-width: 90vw;
+        max-height: 80vh;
+    }
+    
+    .modal-header {
+        margin-bottom: 20px;
+    }
+    
+    /* AI Health Dashboard */
+    .conditions-summary {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    
+    .summary-card {
+        padding: 12px;
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .summary-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+    }
+    
+    .summary-value {
+        font-size: 18px;
+    }
+    
+    .ai-health-title h2 {
+        font-size: 18px;
+    }
+    
+    /* Chatbot responsive */
     .chatbot-container {
-        width: calc(100vw - 32px);
-        right: 16px;
-        bottom: 90px;
+        width: calc(100vw - 24px);
+        height: 450px;
+        right: 12px;
+        bottom: 80px;
     }
     
     .assistance-popup {
-        right: 16px;
-        bottom: 90px;
-        max-width: calc(100vw - 32px);
+        right: 12px;
+        bottom: 80px;
+        max-width: calc(100vw - 24px);
     }
     
-    .modal-content {
-        padding: 20px;
-    }
     .flowise-chat-window {
         width: 90vw !important;
         max-width: 90vw !important;
         height: 70vh !important;
         max-height: 70vh !important;
-    }
-    
-    .flowise-chat-button {
-        bottom: 20px !important;
-        right: 20px !important;
+        bottom: 80px !important;
     }
 }
 
 @media (max-width: 480px) {
+    /* Base adjustments */
     .container {
         padding: 10px;
     }
     
-    .logo-text {
-        font-size: 20px;
+    body {
+        font-size: 14px;
+    }
+    
+    /* Header */
+    .header {
+        padding: 12px;
+        gap: 10px;
     }
     
     .logo-icon {
@@ -1331,64 +1480,370 @@ body {
         font-size: 20px;
     }
     
+    .logo-text {
+        font-size: 18px;
+    }
+    
+    .connection-indicator {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+    
+    .indicator-dot {
+        width: 10px;
+        height: 10px;
+    }
+    
+    /* Cards */
+    .card {
+        padding: 14px;
+    }
+    
     .card-value {
-        font-size: 32px;
+        font-size: 28px;
     }
     
     .card-unit {
+        font-size: 14px;
+    }
+    
+    .card-title {
+        font-size: 14px;
+    }
+    
+    /* Location */
+    .location-section {
+        padding: 8px 12px;
+    }
+    
+    .location-info {
+        font-size: 13px;
+    }
+    
+    .location-coords {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    /* Sections */
+    .section {
+        padding: 14px;
+        margin-bottom: 14px;
+    }
+    
+    .section-header {
+        margin-bottom: 14px;
+    }
+    
+    .section-header h3 {
         font-size: 16px;
     }
     
+    /* LCD buttons */
     .lcd-buttons {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .lcd-btn {
+        padding: 10px;
+        font-size: 12px;
+    }
+    
+    /* Controls */
+    .controls-grid {
         grid-template-columns: 1fr;
     }
     
+    .control-card {
+        padding: 14px;
+    }
+    
+    .control-header {
+        margin-bottom: 12px;
+    }
+    
+    .control-header h4 {
+        font-size: 14px;
+    }
+    
+    /* Status grid */
     .status-grid {
         grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .status-item {
+        padding: 10px;
+        gap: 8px;
+    }
+    
+    .status-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+    }
+    
+    .status-label {
+        font-size: 12px;
+    }
+    
+    .status-value {
+        font-size: 14px;
+    }
+    
+    /* Footer */
+    .footer-logo {
+        font-size: 16px;
+    }
+    
+    .footer-text {
+        font-size: 12px;
+    }
+    
+    .footer-stat {
+        font-size: 12px;
+    }
+    
+    /* Buttons */
+    .btn {
+        width: 100%;
+        padding: 10px 14px;
+        min-height: 40px;
+        font-size: 14px;
+    }
+    
+    .btn-icon {
+        width: 44px;
+        height: 44px;
+    }
+    
+    .btn-icon-small {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+    }
+    
+    .btn-small {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+    
+    /* Modals */
+    .modal {
+        padding: 10px;
+    }
+    
+    .modal-content {
+        padding: 16px;
+        max-width: 95vw;
+    }
+    
+    .setup-header {
+        margin-bottom: 20px;
+    }
+    
+    .setup-icon {
+        font-size: 48px;
+        margin-bottom: 12px;
+    }
+    
+    .setup-steps {
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+    
+    .step-number {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+    }
+    
+    .step-content h3 {
+        font-size: 15px;
+    }
+    
+    .setup-actions {
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+    
+    /* Charts */
+    .chart-wrapper {
+        height: 200px;
+    }
+    
+    .chart {
+        height: 140px;
     }
     
     .chart-tabs {
-        flex-direction: column;
         width: 100%;
+        gap: 6px;
     }
     
     .chart-tab {
-        width: 100%;
-        justify-content: center;
+        padding: 8px 14px;
+        font-size: 12px;
+        min-height: 36px;
     }
     
-    .btn {
-        width: 100%;
+    /* AI Health Dashboard */
+    .ai-health-dashboard {
+        padding: 12px;
+        margin-bottom: 14px;
     }
     
+    .ai-health-header {
+        margin-bottom: 14px;
+    }
+    
+    .ai-health-title h2 {
+        font-size: 16px;
+    }
+    
+    .ai-health-title i {
+        font-size: 20px;
+    }
+    
+    .conditions-summary {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .summary-card {
+        padding: 10px;
+        flex-direction: row;
+        text-align: left;
+    }
+    
+    .summary-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
+    }
+    
+    .summary-value {
+        font-size: 16px;
+    }
+    
+    .summary-label {
+        font-size: 11px;
+    }
+    
+    .ai-recommendations {
+        padding: 12px;
+    }
+    
+    /* Sensor modal */
+    .sensor-value-display .value {
+        font-size: 48px;
+    }
+    
+    .sensor-value-display .unit {
+        font-size: 18px;
+    }
+    
+    .sensor-info h3 {
+        font-size: 16px;
+    }
+    
+    /* Gauge */
+    .gauge {
+        height: 20px;
+    }
+    
+    .gauge-marker {
+        top: -5px;
+        height: 30px;
+    }
+    
+    .gauge-labels {
+        font-size: 11px;
+        margin-top: 8px;
+    }
+    
+    /* Chatbot */
     .chatbot-button {
-        bottom: 20px;
-        right: 20px;
-        width: 56px;
-        height: 56px;
-        font-size: 22px;
+        bottom: 16px;
+        right: 16px;
+        width: 52px;
+        height: 52px;
+        font-size: 20px;
     }
     
     .chatbot-container {
-        height: 450px;
+        width: calc(100vw - 20px);
+        height: 400px;
+        right: 10px;
+        bottom: 70px;
     }
+    
+    .assistance-popup {
+        right: 10px;
+        bottom: 70px;
+        max-width: calc(100vw - 20px);
+    }
+    
     .flowise-chat-window {
         width: 95vw !important;
         height: 65vh !important;
         max-height: 65vh !important;
         right: 2.5vw !important;
-        bottom: 80px !important;
+        bottom: 70px !important;
     }
     
     .flowise-chat-button {
-        width: 56px !important;
-        height: 56px !important;
+        width: 52px !important;
+        height: 52px !important;
         bottom: 16px !important;
         right: 16px !important;
     }
 }
 
 @media (max-width: 360px) {
+    /* Extra small devices */
+    .container {
+        padding: 8px;
+    }
+    
+    .header {
+        padding: 10px;
+    }
+    
+    .logo-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
+    }
+    
+    .logo-text {
+        font-size: 16px;
+    }
+    
+    .card {
+        padding: 12px;
+    }
+    
+    .card-value {
+        font-size: 24px;
+    }
+    
+    .section {
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+    
+    .modal-content {
+        max-width: 98vw;
+        padding: 14px;
+    }
+    
+    .btn {
+        padding: 8px 12px;
+    }
+    
     .flowise-chat-window {
         width: 98vw !important;
         height: 60vh !important;
@@ -1396,8 +1851,8 @@ body {
     }
     
     .flowise-chat-button {
-        width: 52px !important;
-        height: 52px !important;
+        width: 48px !important;
+        height: 48px !important;
     }
 }
 
@@ -1591,7 +2046,7 @@ body {
     background: linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(243, 156, 18, 0.2));
 }
 
-/* Added AI Assistant styling */
+/* AI Assistant Styling */
 .ai-message {
   display: flex;
   gap: 12px;
@@ -1678,130 +2133,6 @@ body {
   border-radius: 50%;
   border-top-color: white;
   animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-
-/* Added AI Assistant styling */
-.ai-message {
-  display: flex;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 8px;
-  animation: fadeIn 0.3s ease-in;
-}
-
-.bot-message {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.user-message {
-  background: #f0f7ff;
-  color: #1a237e;
-  margin-left: auto;
-}
-
-.message-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.2);
-  flex-shrink: 0;
-}
-
-.message-content {
-  flex: 1;
-}
-
-.message-content p {
-  margin: 0 0 10px 0;
-}
-
-.message-content h4 {
-  margin: 15px 0 10px 0;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.message-content ul {
-  margin: 8px 0;
-  padding-left: 20px;
-}
-
-.message-content li {
-  margin: 6px 0;
-}
-
-.health-alert {
-  padding: 12px;
-  border-radius: 6px;
-  margin: 10px 0;
-  border-left: 4px solid;
-}
-
-.health-alert.warning {
-  background: #fff3cd;
-  border-color: #ffc107;
-  color: #856404;
-}
-
-.health-alert.danger {
-  background: #f8d7da;
-  border-color: #dc3545;
-  color: #721c24;
-}
-
-.health-alert.info {
-  background: #d1ecf1;
-  border-color: #0dcaf0;
-  color: #055160;
-}
-
-.loading-spinner {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 /* Added AI Health Dashboard Styles */
@@ -2074,177 +2405,4 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-/* Mobile Responsive for AI Dashboard */
-@media (max-width: 768px) {
-  .conditions-summary {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .ai-health-title h2 {
-    font-size: 18px;
-  }
-
-  .summary-value {
-    font-size: 18px;
-  }
-}
-
-@media (max-width: 480px) {
-  .conditions-summary {
-    grid-template-columns: 1fr;
-  }
-
-  .ai-health-dashboard {
-    padding: 16px;
-  }
-
-  .ai-recommendations {
-    padding: 16px;
-  }
-}
-
-
-/* AI Assistant Styling */
-.ai-analysis {
-  margin-top: 15px;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.ai-analysis p {
-  margin-bottom: 12px;
-  color: var(--text-primary);
-}
-
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--primary-color);
-  margin: 20px 0 10px 0;
-  padding-bottom: 5px;
-  border-bottom: 2px solid var(--border-color);
-}
-
-.ai-list {
-  margin: 10px 0 15px 20px;
-  padding: 0;
-}
-
-.ai-list li {
-  margin-bottom: 8px;
-  color: var(--text-primary);
-}
-
-.sensor-summary {
-  background: var(--card-bg);
-  border-radius: 8px;
-  padding: 12px;
-  margin: 15px 0;
-  border-left: 4px solid var(--primary-color);
-}
-
-.sensor-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.sensor-row:last-child {
-  border-bottom: none;
-}
-
-.sensor-label {
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-.sensor-value {
-  font-weight: 700;
-  font-size: 15px;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-.sensor-value.danger {
-  background-color: rgba(220, 53, 69, 0.15);
-  color: #dc3545;
-  border: 1px solid rgba(220, 53, 69, 0.3);
-}
-
-.sensor-value.warning {
-  background-color: rgba(255, 193, 7, 0.15);
-  color: #ffc107;
-  border: 1px solid rgba(255, 193, 7, 0.3);
-}
-
-/* Health Alert Styling */
-.health-alert {
-  padding: 10px 15px;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  font-size: 14px;
-}
-
-.health-alert.info {
-  background: #e3f2fd;
-  color: #1565c0;
-  border: 1px solid #bbdefb;
-}
-
-.health-alert.warning {
-  background: #fff3e0;
-  color: #f57c00;
-  border: 1px solid #ffcc80;
-}
-
-.health-alert.danger {
-  background: #ffebee;
-  color: #c62828;
-  border: 1px solid #ef9a9a;
-}
-
-.health-alert strong {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Loading Spinner */
-.loading-spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(0, 0, 0, 0.1);
-  border-radius: 50%;
-  border-top-color: var(--primary-color);
-  animation: spin 1s ease-in-out infinite;
-  margin-right: 8px;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Dark Theme Adjustments */
-body.dark-theme .health-alert.info {
-  background: rgba(30, 136, 229, 0.2);
-  border-color: rgba(30, 136, 229, 0.4);
-}
-
-body.dark-theme .health-alert.warning {
-  background: rgba(255, 152, 0, 0.2);
-  border-color: rgba(255, 152, 0, 0.4);
-}
-
-body.dark-theme .health-alert.danger {
-  background: rgba(244, 67, 54, 0.2);
-  border-color: rgba(244, 67, 54, 0.4);
-}
-
-body.dark-theme .sensor-summary {
-  background: rgba(255, 255, 255, 0.05);
 }
