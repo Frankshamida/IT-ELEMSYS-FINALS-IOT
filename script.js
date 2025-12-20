@@ -1668,4 +1668,342 @@ window.openAIAssistant = openAIAssistant // Expose AI assistant function
 window.closeAIAssistant = closeAIAssistant // Expose AI assistant close function
 window.refreshAIAnalysis = refreshAIAnalysis // Expose AI analysis refresh function
 
+// ============================================
+// Real-Time AI Health Assistant
+// ============================================
+let previousSensorData = {}
+
+// Update AI Health Dashboard with real-time changes
+function updateAIHealthDashboard() {
+  const dashboard = document.getElementById('aiHealthDashboard')
+  if (!dashboard) return
+
+  const currentTemp = parseFloat(document.getElementById('temperature')?.textContent) || 0
+  const currentHum = parseFloat(document.getElementById('humidity')?.textContent) || 0
+  const currentAir = parseFloat(document.getElementById('airQuality')?.textContent) || 0
+  const currentCo2 = parseFloat(document.getElementById('co2Level')?.textContent) || 0
+
+  // Update temperature
+  updateSensorCard('aiTempValue', currentTemp, 'Temp', '°C')
+  updateSensorCard('aiHumValue', currentHum, 'Humidity', '%')
+  updateSensorCard('aiAirValue', currentAir, 'AirQuality', 'PPM')
+  updateSensorCard('aiCo2Value', currentCo2, 'CO2', 'PPM')
+
+  // Update status indicators
+  updateTempStatus(currentTemp)
+  updateHumidityStatus(currentHum)
+  updateAirQualityStatus(currentAir)
+  updateCO2Status(currentCo2)
+
+  // Update real-time change indicators
+  updateRealTimeIndicators(currentTemp, currentHum, currentAir, currentCo2)
+
+  // Update overall health status
+  updateOverallHealthStatus(currentTemp, currentHum, currentAir, currentCo2)
+
+  // Generate AI recommendations
+  generateAIRecommendations(currentTemp, currentHum, currentAir, currentCo2)
+}
+
+function updateSensorCard(elementId, value, type, unit) {
+  const element = document.getElementById(elementId)
+  if (element) {
+    if (unit === '%' || unit === 'PPM') {
+      element.textContent = value.toFixed(1) + unit
+    } else {
+      element.textContent = value.toFixed(1) + unit
+    }
+  }
+}
+
+function updateTempStatus(temp) {
+  const status = document.getElementById('aiTempStatus')
+  if (!status) return
+
+  status.className = 'summary-status'
+  if (temp >= 20 && temp <= 25) {
+    status.textContent = '✓ Optimal'
+    status.classList.add('good')
+  } else if (temp >= 18 && temp < 20 || temp > 25 && temp <= 28) {
+    status.textContent = '⚠ Moderate'
+    status.classList.add('moderate')
+  } else if (temp >= 15 && temp < 18 || temp > 28 && temp <= 30) {
+    status.textContent = '⚠ Unhealthy'
+    status.classList.add('unhealthy')
+  } else {
+    status.textContent = '🚨 Hazardous'
+    status.classList.add('hazardous')
+  }
+}
+
+function updateHumidityStatus(hum) {
+  const status = document.getElementById('aiHumStatus')
+  if (!status) return
+
+  status.className = 'summary-status'
+  if (hum >= 40 && hum <= 60) {
+    status.textContent = '✓ Optimal'
+    status.classList.add('good')
+  } else if (hum >= 30 && hum < 40 || hum > 60 && hum <= 70) {
+    status.textContent = '⚠ Moderate'
+    status.classList.add('moderate')
+  } else if (hum >= 20 && hum < 30 || hum > 70 && hum <= 80) {
+    status.textContent = '⚠ Unhealthy'
+    status.classList.add('unhealthy')
+  } else {
+    status.textContent = '🚨 Hazardous'
+    status.classList.add('hazardous')
+  }
+}
+
+function updateAirQualityStatus(air) {
+  const status = document.getElementById('aiAirStatus')
+  if (!status) return
+
+  status.className = 'summary-status'
+  if (air <= 50) {
+    status.textContent = '✓ Excellent'
+    status.classList.add('good')
+  } else if (air <= 100) {
+    status.textContent = '⚠ Moderate'
+    status.classList.add('moderate')
+  } else if (air <= 200) {
+    status.textContent = '⚠ Unhealthy'
+    status.classList.add('unhealthy')
+  } else {
+    status.textContent = '🚨 Hazardous'
+    status.classList.add('hazardous')
+  }
+}
+
+function updateCO2Status(co2) {
+  const status = document.getElementById('aiCo2Status')
+  if (!status) return
+
+  status.className = 'summary-status'
+  if (co2 <= 600) {
+    status.textContent = '✓ Excellent'
+    status.classList.add('good')
+  } else if (co2 <= 800) {
+    status.textContent = '✓ Good'
+    status.classList.add('good')
+  } else if (co2 <= 1000) {
+    status.textContent = '⚠ Fair'
+    status.classList.add('moderate')
+  } else if (co2 <= 1400) {
+    status.textContent = '⚠ Poor'
+    status.classList.add('unhealthy')
+  } else {
+    status.textContent = '🚨 Hazardous'
+    status.classList.add('hazardous')
+  }
+}
+
+function updateRealTimeIndicators(temp, hum, air, co2) {
+  updateChangeIndicator('aiTempChange', temp, previousSensorData.temp)
+  updateChangeIndicator('aiHumChange', hum, previousSensorData.humidity)
+  updateChangeIndicator('aiAirChange', air, previousSensorData.air)
+  updateChangeIndicator('aiCo2Change', co2, previousSensorData.co2)
+
+  previousSensorData = { temp, humidity: hum, air, co2 }
+}
+
+function updateChangeIndicator(elementId, currentValue, previousValue) {
+  const element = document.getElementById(elementId)
+  if (!element) return
+
+  if (!previousValue) {
+    element.textContent = '→ Stable'
+    element.className = 'real-time-indicator stable'
+    return
+  }
+
+  const change = currentValue - previousValue
+  const percentChange = Math.abs((change / previousValue) * 100)
+
+  if (Math.abs(change) < 0.5) {
+    element.textContent = '→ Stable'
+    element.className = 'real-time-indicator stable'
+  } else if (change > 0) {
+    element.textContent = `↑ +${change.toFixed(1)} (${percentChange.toFixed(1)}%)`
+    element.className = 'real-time-indicator increasing'
+  } else {
+    element.textContent = `↓ ${change.toFixed(1)} (${percentChange.toFixed(1)}%)`
+    element.className = 'real-time-indicator decreasing'
+  }
+}
+
+function updateOverallHealthStatus(temp, hum, air, co2) {
+  const statusBar = document.getElementById('healthStatusBar')
+  if (!statusBar) return
+
+  statusBar.innerHTML = ''
+
+  const conditions = []
+  if (temp >= 20 && temp <= 25) conditions.push('✓')
+  else if (temp >= 18 && temp <= 28) conditions.push('⚠')
+  else conditions.push('🚨')
+
+  if (hum >= 40 && hum <= 60) conditions.push('✓')
+  else if (hum >= 30 && hum <= 70) conditions.push('⚠')
+  else conditions.push('🚨')
+
+  if (air <= 100) conditions.push('✓')
+  else if (air <= 200) conditions.push('⚠')
+  else conditions.push('🚨')
+
+  if (co2 <= 1000) conditions.push('✓')
+  else if (co2 <= 1400) conditions.push('⚠')
+  else conditions.push('🚨')
+
+  const healthScore = conditions.filter(c => c === '✓').length
+
+  if (healthScore >= 3) {
+    const indicator = document.createElement('div')
+    indicator.className = 'status-indicator healthy'
+    indicator.innerHTML = '<i class="fas fa-check-circle"></i> Healthy Environment'
+    statusBar.appendChild(indicator)
+  } else if (healthScore >= 2) {
+    const indicator = document.createElement('div')
+    indicator.className = 'status-indicator warning'
+    indicator.innerHTML = '<i class="fas fa-exclamation-circle"></i> Needs Attention'
+    statusBar.appendChild(indicator)
+  } else {
+    const indicator = document.createElement('div')
+    indicator.className = 'status-indicator alert'
+    indicator.innerHTML = '<i class="fas fa-alert-circle"></i> Action Required'
+    statusBar.appendChild(indicator)
+  }
+
+  const details = document.createElement('div')
+  details.style.marginTop = '10px'
+  details.style.fontSize = '13px'
+  details.style.color = 'var(--text-secondary)'
+  details.textContent = `Health Score: ${healthScore}/4 | Temp: ${conditions[0]} | Humidity: ${conditions[1]} | Air: ${conditions[2]} | CO₂: ${conditions[3]}`
+  statusBar.appendChild(details)
+}
+
+function generateAIRecommendations(temp, hum, air, co2) {
+  const container = document.getElementById('aiRecommendations')
+  if (!container) return
+
+  container.innerHTML = ''
+
+  const recommendations = []
+
+  // Temperature recommendations
+  if (temp < 18) {
+    recommendations.push({
+      risk: 'high',
+      title: '❄️ Temperature Too Low',
+      body: '<p>Current temperature is <strong>' + temp.toFixed(1) + '°C</strong>, which is below optimal range.</p><h4>Health Impact:</h4><ul><li>Risk of respiratory issues</li><li>Discomfort and reduced productivity</li></ul><h4>Recommendations:</h4><ul><li>Increase heating gradually</li><li>Use warm clothing</li><li>Ensure proper insulation</li></ul>'
+    })
+  } else if (temp > 28) {
+    recommendations.push({
+      risk: 'high',
+      title: '🔥 Temperature Too High',
+      body: '<p>Current temperature is <strong>' + temp.toFixed(1) + '°C</strong>, which is above optimal range.</p><h4>Health Impact:</h4><ul><li>Risk of dehydration</li><li>Heat stress and fatigue</li></ul><h4>Recommendations:</h4><ul><li>Increase ventilation</li><li>Use air conditioning if available</li><li>Stay hydrated</li></ul>'
+    })
+  } else {
+    recommendations.push({
+      risk: 'low',
+      title: '✓ Temperature Optimal',
+      body: '<p>Temperature is in the optimal range of <strong>20-25°C</strong>.</p><h4>Status:</h4><ul><li>Comfortable for most activities</li><li>Minimal health impact</li></ul>'
+    })
+  }
+
+  // Humidity recommendations
+  if (hum < 30) {
+    recommendations.push({
+      risk: 'moderate',
+      title: '💧 Humidity Too Low',
+      body: '<p>Current humidity is <strong>' + hum.toFixed(1) + '%</strong>, which is below optimal range.</p><h4>Health Impact:</h4><ul><li>Dry skin and respiratory irritation</li><li>Increased static electricity</li></ul><h4>Recommendations:</h4><ul><li>Use a humidifier</li><li>Increase water intake</li><li>Improve ventilation</li></ul>'
+    })
+  } else if (hum > 70) {
+    recommendations.push({
+      risk: 'moderate',
+      title: '🌊 Humidity Too High',
+      body: '<p>Current humidity is <strong>' + hum.toFixed(1) + '%</strong>, which is above optimal range.</p><h4>Health Impact:</h4><ul><li>Mold growth risk</li><li>Dust mite proliferation</li></ul><h4>Recommendations:</h4><ul><li>Use dehumidifier</li><li>Improve ventilation</li><li>Check for leaks</li></ul>'
+    })
+  } else {
+    recommendations.push({
+      risk: 'low',
+      title: '✓ Humidity Optimal',
+      body: '<p>Humidity is in the optimal range of <strong>40-60%</strong>.</p><h4>Status:</h4><ul><li>Comfortable and healthy</li><li>Minimal mold risk</li></ul>'
+    })
+  }
+
+  // Air Quality recommendations
+  if (air > 100) {
+    recommendations.push({
+      risk: 'high',
+      title: '💨 Air Quality Poor',
+      body: '<p>Air quality is <strong>' + air.toFixed(1) + ' PPM</strong>, which indicates poor indoor air quality.</p><h4>Health Impact:</h4><ul><li>Respiratory problems</li><li>Reduced cognitive function</li></ul><h4>Recommendations:</h4><ul><li>Open windows for fresh air</li><li>Use air purifier</li><li>Reduce pollution sources</li></ul>'
+    })
+  } else {
+    recommendations.push({
+      risk: 'low',
+      title: '✓ Air Quality Good',
+      body: '<p>Air quality is <strong>' + air.toFixed(1) + ' PPM</strong>, which is acceptable.</p><h4>Status:</h4><ul><li>Safe for breathing</li><li>Minimal health risk</li></ul>'
+    })
+  }
+
+  // CO2 recommendations
+  if (co2 > 1000) {
+    recommendations.push({
+      risk: 'high',
+      title: '🌫️ CO₂ Level High',
+      body: '<p>CO₂ level is <strong>' + co2.toFixed(1) + ' PPM</strong>, which indicates poor ventilation.</p><h4>Health Impact:</h4><ul><li>Headaches and drowsiness</li><li>Reduced concentration</li></ul><h4>Recommendations:</h4><ul><li>Open windows immediately</li><li>Increase HVAC fan speed</li><li>Ensure proper air circulation</li></ul>'
+    })
+  } else {
+    recommendations.push({
+      risk: 'low',
+      title: '✓ CO₂ Level Normal',
+      body: '<p>CO₂ level is <strong>' + co2.toFixed(1) + ' PPM</strong>, which is healthy.</p><h4>Status:</h4><ul><li>Good ventilation</li><li>Safe breathing environment</li></ul>'
+    })
+  }
+
+  recommendations.forEach(rec => {
+    const card = document.createElement('div')
+    card.className = `ai-recommendation-card risk-${rec.risk}`
+    card.innerHTML = `
+      <div class="recommendation-header">
+        <h3>${rec.title}</h3>
+      </div>
+      <div class="recommendation-body">${rec.body}</div>
+    `
+    container.appendChild(card)
+  })
+}
+
+function generateHealthReport() {
+  const temp = parseFloat(document.getElementById('temperature')?.textContent) || 0
+  const hum = parseFloat(document.getElementById('humidity')?.textContent) || 0
+  const air = parseFloat(document.getElementById('airQuality')?.textContent) || 0
+  const co2 = parseFloat(document.getElementById('co2Level')?.textContent) || 0
+
+  const report = `
+    AirSentinel Health Report
+    Generated: ${new Date().toLocaleString()}
+    
+    Current Readings:
+    - Temperature: ${temp.toFixed(1)}°C
+    - Humidity: ${hum.toFixed(1)}%
+    - Air Quality: ${air.toFixed(1)} PPM
+    - CO2 Level: ${co2.toFixed(1)} PPM
+    
+    Summary: See full analysis in AI Health Assistant section
+  `
+
+  alert('Report generated. Implementation of PDF export coming soon!')
+  console.log(report)
+}
+
+function setAlertThresholds() {
+  alert('Alert thresholds feature coming soon! You will be able to customize notification settings.')
+}
+
+// Update dashboard every 2 seconds
+setInterval(updateAIHealthDashboard, 2000)
+
 console.log("✅ AirSentinel script.js loaded successfully!")

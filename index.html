@@ -516,18 +516,18 @@
         </div>
         
         <!-- AI Health Dashboard Section -->
-        <div class="ai-health-dashboard" id="aiHealthDashboard" style="display: none;">
+        <div class="ai-health-dashboard" id="aiHealthDashboard">
             <div class="ai-health-header">
                 <div class="ai-health-title">
                     <i class="fas fa-heartbeat"></i>
-                    <h2>AI Health Analysis</h2>
+                    <h2>🤖 AI Health Assistant - Real-Time Analysis</h2>
                 </div>
                 <button class="btn btn-small" onclick="refreshAIAnalysis()">
                     <i class="fas fa-sync-alt"></i> Refresh
                 </button>
             </div>
             
-            <!-- Current Conditions Summary -->
+            <!-- Current Conditions Summary with Real-time Indicators -->
             <div class="conditions-summary">
                 <div class="summary-card">
                     <div class="summary-icon temp-icon">
@@ -537,6 +537,7 @@
                         <div class="summary-label">Temperature</div>
                         <div class="summary-value" id="aiTempValue">--°C</div>
                         <div class="summary-status" id="aiTempStatus">Checking...</div>
+                        <div class="real-time-indicator" id="aiTempChange"></div>
                     </div>
                 </div>
                 
@@ -548,6 +549,7 @@
                         <div class="summary-label">Humidity</div>
                         <div class="summary-value" id="aiHumValue">--%</div>
                         <div class="summary-status" id="aiHumStatus">Checking...</div>
+                        <div class="real-time-indicator" id="aiHumChange"></div>
                     </div>
                 </div>
                 
@@ -559,6 +561,7 @@
                         <div class="summary-label">Air Quality</div>
                         <div class="summary-value" id="aiAirValue">-- PPM</div>
                         <div class="summary-status" id="aiAirStatus">Checking...</div>
+                        <div class="real-time-indicator" id="aiAirChange"></div>
                     </div>
                 </div>
                 
@@ -570,6 +573,20 @@
                         <div class="summary-label">CO₂ Level</div>
                         <div class="summary-value" id="aiCo2Value">-- PPM</div>
                         <div class="summary-status" id="aiCo2Status">Checking...</div>
+                        <div class="real-time-indicator" id="aiCo2Change"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Real-Time Health Status -->
+            <div class="health-status-container">
+                <div class="health-status-header">
+                    <i class="fas fa-heartbeat"></i>
+                    <h3>Current Health Status</h3>
+                </div>
+                <div class="health-status-bar" id="healthStatusBar">
+                    <div class="status-indicator healthy">
+                        <i class="fas fa-check-circle"></i> Healthy Environment
                     </div>
                 </div>
             </div>
@@ -578,8 +595,21 @@
             <div class="ai-recommendations" id="aiRecommendations">
                 <div class="recommendations-loading">
                     <i class="fas fa-robot fa-2x"></i>
-                    <p>AI is analyzing your environmental conditions...</p>
+                    <p>🤖 AI is analyzing your environmental conditions...</p>
                 </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="ai-quick-actions">
+                <button class="action-btn" onclick="openAIAssistant()">
+                    <i class="fas fa-comments"></i> Chat with AI
+                </button>
+                <button class="action-btn" onclick="generateHealthReport()">
+                    <i class="fas fa-file-pdf"></i> Generate Report
+                </button>
+                <button class="action-btn" onclick="setAlertThresholds()">
+                    <i class="fas fa-bell"></i> Set Alerts
+                </button>
             </div>
         </div>
         
